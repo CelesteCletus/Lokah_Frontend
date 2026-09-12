@@ -1,0 +1,35 @@
+FRONTEND — what to do with this folder
+========================================
+
+This is your WEBSITE (what visitors see). It goes to your static hosting
+(e.g. GoDaddy Web Hosting, Netlify, Vercel).
+
+STEP 1 — Set the backend URL
+-----------------------------
+Open the file ".env.example" in this folder. Make a COPY of it and rename
+the copy to exactly:  .env.production
+
+Inside .env.production, replace the localhost URL with your REAL live
+backend URL (the one you got from deploying the "backend" folder), e.g.:
+
+VITE_API_URL=https://lokah-backend-xxxx.publish.godaddy.com/api
+
+STEP 2 — Build the site
+------------------------
+You need Node.js installed on your computer for this step (not on the
+hosting — just your own PC, one time).
+
+Open a terminal in this folder and run:
+
+    npm install
+    npm run build
+
+This creates a new folder called "dist" — THAT is your finished website.
+
+STEP 3 — Upload
+-----------------
+Upload the CONTENTS of the "dist" folder (not the dist folder itself,
+what's INSIDE it) to your web hosting's public/www folder.
+
+That's it — do not upload this whole "frontend" folder to your host,
+only the built "dist" folder from Step 2.

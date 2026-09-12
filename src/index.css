@@ -1,0 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap');
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-matte-black text-ivory-100 font-body antialiased;
+  }
+
+  ::selection {
+    @apply bg-gold-500/30 text-ivory-50;
+  }
+
+  /* ── Custom Scrollbar (desktop only) ───────────────────────────── */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.18);
+    border-radius: 100px;
+    transition: background 0.3s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(212, 175, 55, 0.38);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(212, 175, 55, 0.18) #0a0a0a;
+  }
+}
+
+@layer components {
+  .glass-card {
+    /* Inset top-edge highlight adds subtle depth — the "held object" quality */
+    @apply bg-gradient-to-br from-charcoal-800/60 to-matte-900/80 backdrop-blur-xl border border-ivory-400/10 rounded-2xl;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-500 hover:border-champagne-400/30 hover:translate-y-[-4px];
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .glass-card-hover:hover {
+    box-shadow:
+      0 4px 20px rgba(212, 175, 55, 0.18),
+      0 16px 48px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-gold text-matte-black font-body font-semibold rounded-full transition-all duration-300 hover:shadow-gold hover:scale-[1.02] active:scale-[0.98];
+  }
+
+  /* Border opacity raised from /30 → /40 for better optical weight */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-8 py-4 bg-transparent border border-ivory-400/40 text-ivory-100 font-body font-medium rounded-full transition-all duration-300 hover:border-champagne-400 hover:bg-charcoal-800/50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-transparent text-ivory-200 font-body font-medium rounded-lg transition-all duration-300 hover:bg-ivory-400/10 hover:text-ivory-50;
+  }
+
+  /* Added lg:leading-tight to prevent runaway line-height at large type sizes */
+  .section-heading {
+    @apply font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-ivory-50 tracking-tight lg:leading-tight;
+  }
+
+  .section-subheading {
+    @apply font-display text-2xl md:text-3xl font-medium text-ivory-200;
+  }
+
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-champagne-400 via-gold-400 to-champagne-400;
+  }
+
+  /* All form inputs now include font-body so they don't fall back to browser default */
+  .input-luxury {
+    @apply w-full font-body bg-charcoal-900/60 border border-ivory-400/20 rounded-xl px-5 py-4 text-ivory-100 placeholder:text-ivory-400/50 focus:outline-none focus:border-champagne-400/50 focus:ring-1 focus:ring-champagne-400/30 transition-all duration-300 backdrop-blur-sm;
+  }
+
+  .select-luxury {
+    @apply w-full font-body bg-charcoal-900/60 border border-ivory-400/20 rounded-xl px-5 py-4 text-ivory-100 focus:outline-none focus:border-champagne-400/50 focus:ring-1 focus:ring-champagne-400/30 transition-all duration-300 backdrop-blur-sm appearance-none cursor-pointer;
+  }
+
+  .textarea-luxury {
+    @apply w-full font-body bg-charcoal-900/60 border border-ivory-400/20 rounded-xl px-5 py-4 text-ivory-100 placeholder:text-ivory-400/50 focus:outline-none focus:border-champagne-400/50 focus:ring-1 focus:ring-champagne-400/30 transition-all duration-300 backdrop-blur-sm resize-y;
+  }
+
+  .divider-gold {
+    @apply w-24 h-[2px] bg-gradient-to-r from-transparent via-gold-500 to-transparent;
+  }
+
+  .divider-gold-long {
+    @apply w-full h-[1px] bg-gradient-to-r from-transparent via-ivory-400/20 to-transparent;
+  }
+
+  .scrolled {
+    @apply bg-matte-black/95 backdrop-blur-lg border-b border-ivory-400/10;
+  }
+
+  /* Consistent keyboard focus ring — used across all interactive elements */
+  .focus-luxury {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne-400/50 focus-visible:ring-offset-1 focus-visible:ring-offset-matte-black;
+  }
+}
+
+@layer utilities {
+  .text-shadow-elegant {
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-shadow-gold {
+    text-shadow: 0 0 40px rgba(212, 175, 55, 0.5);
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+
+  .animation-delay-800 {
+    animation-delay: 800ms;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .animate-marquee {
+    display: flex;
+    width: max-content;
+    animation: marquee 30s linear infinite;
+  }
+
+  .animate-marquee:hover {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* ── Number input spinner removal ───────────────────────────────────── */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* ── Reduced Motion — WCAG AAA compliance ──────────────────────────── */
+/* Visitors with vestibular disorders or motion sensitivity get a calm,
+   non-animated experience. Every transition and animation is disabled.
+   Framer Motion respects this automatically when configured; this CSS
+   layer ensures any CSS-only animations are also suppressed. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Dark Mode Leaflet Map Tiles ────────────────────────────────────── */
+.dark-leaflet-map .leaflet-tile-container img,
+.dark-leaflet-map .leaflet-tile {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) !important;
+}
+
