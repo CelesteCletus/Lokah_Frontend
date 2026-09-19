@@ -135,22 +135,42 @@ const initialBlogs: Blog[] = [
 
 // Helper: build fetch options with credentials + correct Content-Type
 const buildOptions = (options: RequestInit = {}): RequestInit => {
-  const defaults: RequestInit = { credentials: 'include' };
+  const headers: Record<string, string> = {};
+
   if (options.body && !(options.body instanceof FormData)) {
-    defaults.headers = { 'Content-Type': 'application/json', ...options.headers };
-  } else {
-    defaults.headers = { ...options.headers };
+    headers['Content-Type'] = 'application/json';
   }
-  return { ...defaults, ...options };
+
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((val, key) => {
+        headers[key] = val;
+      });
+    } else if (Array.isArray(options.headers)) {
+      options.headers.forEach(([key, val]) => {
+        headers[key] = val;
+      });
+    } else {
+      Object.assign(headers, options.headers);
+    }
+  }
+
+  return {
+    ...options,
+    credentials: 'include',
+    headers,
+  };
 };
 
 // Helper: Central Fetch with Credentials (HttpOnly cookies)
 // Automatically retries once after a silent token-refresh on 401 responses
-// so that the 15-min access-token expiry is transparent to callers.
+// so that access-token expiry is transparent to callers.
 const request = async (url: string, options: RequestInit = {}, _isRetry = false): Promise<unknown> => {
   const response = await fetch(`${API_URL}${url}`, buildOptions(options));
 
-  if (response.status === 401 && !_isRetry) {
+  // Only attempt silent refresh on protected business endpoints, not auth endpoints themselves
+  const isAuthEndpoint = url.startsWith('/auth/login') || url.startsWith('/auth/refresh') || url.startsWith('/auth/logout');
+  if (response.status === 401 && !_isRetry && !isAuthEndpoint) {
     // Try to refresh the access token silently using the refresh-token cookie
     try {
       const refreshRes = await fetch(`${API_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
@@ -744,7 +764,7 @@ export interface SupportMessage {
 // Public: check if any agent is online
 export const checkAgentPresence = async (): Promise<boolean> => {
   try {
-    const res = await fetch(`${API_URL}/support/presence`);
+    const res = await fetch(`${API_URL}/support/presence`, { credentials: 'include' });
     if (!res.ok) return false;
     const data = await res.json();
     return !!data.online;
