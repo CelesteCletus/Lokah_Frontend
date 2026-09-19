@@ -1,6 +1,7 @@
 import { properties as initialProperties, Property } from '../data/sampleData';
 import { compressFile } from './compressor';
 import { normalizeAmenities } from './propertyContent';
+import { API_URL } from './apiUrl';
 
 export interface Blog {
   id: number;
@@ -102,11 +103,8 @@ export interface DashboardStats {
   activityLogs: any[];
 }
 
-// Base URL of your Express server.
-// Primary: use VITE_API_URL env var if injected at build time.
-// Fallback: the GoDaddy Airo backend URL — ensures correct API target in production
-// even when VITE_API_URL is not provided by the build pipeline.
-const API_URL = import.meta.env.VITE_API_URL || 'https://68v1kl1ewi.c40.airoapp.ai/api';
+// API_URL is imported from './apiUrl' — see that file for the guard logic that
+// prevents GoDaddy from injecting the wrong (frontend preview) URL at build time.
 
 // Initial sample blogs fallback
 const initialBlogs: Blog[] = [
