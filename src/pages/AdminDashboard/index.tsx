@@ -59,7 +59,8 @@ import LocationSelector from '../../components/Admin/LocationSelector';
 import { normalizeAmenities } from '../../lib/propertyContent';
 import StaffSupportDesk from '../../components/Admin/StaffSupportDesk';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// API base URL: VITE_API_URL is baked in at build time; fallback to GoDaddy Airo backend.
+const API_URL = import.meta.env.VITE_API_URL || 'https://68v1kl1ewi.c40.airoapp.ai/api';
 
 const extractLocationAndArea = (formattedAddress: string) => {
   const parts = formattedAddress.split(',').map(p => p.trim()).filter(Boolean);

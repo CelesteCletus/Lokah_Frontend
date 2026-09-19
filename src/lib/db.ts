@@ -102,8 +102,11 @@ export interface DashboardStats {
   activityLogs: any[];
 }
 
-// Base URL of your Express server
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Base URL of your Express server.
+// Primary: use VITE_API_URL env var if injected at build time.
+// Fallback: the GoDaddy Airo backend URL — ensures correct API target in production
+// even when VITE_API_URL is not provided by the build pipeline.
+const API_URL = import.meta.env.VITE_API_URL || 'https://68v1kl1ewi.c40.airoapp.ai/api';
 
 // Initial sample blogs fallback
 const initialBlogs: Blog[] = [

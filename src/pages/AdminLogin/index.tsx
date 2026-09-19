@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Mail, Key, ArrowRight, ShieldCheck, Check, Wifi } from 'lucide-react';
 import { loginAdmin, checkAdminSession, requestPasswordReset } from '../../lib/db';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// API base URL: VITE_API_URL is baked in at build time; fallback to GoDaddy Airo backend.
+const API_URL = import.meta.env.VITE_API_URL || 'https://68v1kl1ewi.c40.airoapp.ai/api';
 const LUXE_EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function AdminLogin() {
