@@ -183,7 +183,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const initSession = async () => {
       try {
-        const healthRes = await fetch(`${API_URL}/health`);
+        const healthRes = await fetch(`${API_URL}/health`, { credentials: 'include' });
         const online = healthRes.ok;
         setApiConnected(online);
 

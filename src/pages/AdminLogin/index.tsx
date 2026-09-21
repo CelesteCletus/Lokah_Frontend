@@ -31,7 +31,7 @@ export default function AdminLogin() {
 
   // Check if Express backend is online on page load
   useEffect(() => {
-    fetch(`${API_URL}/health`)
+    fetch(`${API_URL}/health`, { credentials: 'include' })
       .then(res => setApiConnected(res.ok))
       .catch(() => setApiConnected(false));
   }, []);

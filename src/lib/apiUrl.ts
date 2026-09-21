@@ -1,37 +1,36 @@
 /**
- * Centralized API base URL for all fetch calls.
+ * Centralized API base URL for all frontend requests.
  *
- * The correct production backend is: https://68v1kl1ewi.c40.airoapp.ai/api
+ * Configured strictly via environment variables:
+ * - VITE_API_URL (Vite) or REACT_APP_API_URL
  *
- * Problem: GoDaddy Airo injects VITE_API_URL at build time using the value
- * configured in its dashboard. That value has incorrectly been set to the
- * frontend's own preview domain (adp691i6fs.preview.c40.airoapp.ai) instead
- * of the separate backend domain (68v1kl1ewi.c40.airoapp.ai). Since Vite
- * bakes this at build time, the wrong URL ends up hardcoded in the bundle.
- *
- * Guard logic:
- *   1. Read VITE_API_URL (may be injected correctly or incorrectly by GoDaddy).
- *   2. Reject it if it points to a *.preview.c40.airoapp.ai domain — that is
- *      always the frontend preview domain, never the backend.
- *   3. Reject it if it contains the frontend app ID "adp691i6fs" — that is
- *      the frontend container ID, not the backend.
- *   4. Fall back to the hardcoded correct backend URL.
- *
- * This ensures the correct backend URL is used regardless of what GoDaddy
- * injects, while still respecting a correctly-configured VITE_API_URL.
+ * Rejects any GoDaddy Airo preview URLs (*.preview.*.airoapp.ai)
+ * to prevent accidental auth/preflight failure loops.
  */
 
-const CORRECT_BACKEND = 'https://68v1kl1ewi.c40.airoapp.ai/api';
+const rawInjected = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.REACT_APP_API_URL ||
+  ''
+).trim().replace(/\/+$/, '');
 
-const injected = import.meta.env.VITE_API_URL || '';
+const isAiroPreviewUrl =
+  rawInjected.includes('.preview.') && rawInjected.includes('.airoapp.ai');
 
-const isPreviewFrontend =
-  injected.includes('adp691i6fs') ||          // this app's frontend container ID
-  injected.includes('preview.c40.airoapp.ai'); // preview domain is always frontend, not backend
+let resolvedUrl = rawInjected;
 
-/**
- * The resolved API base URL for all HTTP requests to the backend.
- * Safe to use directly: `fetch(`${API_URL}/auth/login`, ...)`.
- */
-export const API_URL: string =
-  injected && !isPreviewFrontend ? injected : CORRECT_BACKEND;
+if (!resolvedUrl) {
+  console.warn(
+    '[Lokah API] VITE_API_URL is not set in the environment. Set VITE_API_URL in your .env or build settings.'
+  );
+} else if (isAiroPreviewUrl) {
+  console.warn(
+    `[Lokah API] Rejected invalid preview API URL: "${rawInjected}". Preview domains require platform auth and cannot serve API requests. Please set VITE_API_URL to your published backend URL.`
+  );
+  resolvedUrl = '';
+}
+
+// Normalize: ensure trailing /api path without double slashes
+export const API_URL: string = resolvedUrl
+  ? (resolvedUrl.endsWith('/api') ? resolvedUrl : `${resolvedUrl}/api`)
+  : '/api';
