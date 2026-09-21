@@ -1,12 +1,12 @@
 /**
  * Centralized API base URL for all frontend requests.
  *
- * Configured strictly via environment variables:
- * - VITE_API_URL (Vite) or REACT_APP_API_URL
- *
- * Rejects any GoDaddy Airo preview URLs (*.preview.*.airoapp.ai)
- * to prevent accidental auth/preflight failure loops.
+ * Primary: VITE_API_URL (or REACT_APP_API_URL) if set and not a preview host.
+ * Fallback: https://6qxwqtx3i8.c40.airoapp.ai/api with a console warning if missing or preview.
+ * Never returns an empty or relative base URL.
  */
+
+const FALLBACK_API_URL = 'https://6qxwqtx3i8.c40.airoapp.ai/api';
 
 const rawInjected = (
   import.meta.env.VITE_API_URL ||
@@ -21,16 +21,17 @@ let resolvedUrl = rawInjected;
 
 if (!resolvedUrl) {
   console.warn(
-    '[Lokah API] VITE_API_URL is not set in the environment. Set VITE_API_URL in your .env or build settings.'
+    `[Lokah API] VITE_API_URL is not set in build environment. Falling back to production backend: ${FALLBACK_API_URL}`
   );
+  resolvedUrl = FALLBACK_API_URL;
 } else if (isAiroPreviewUrl) {
   console.warn(
-    `[Lokah API] Rejected invalid preview API URL: "${rawInjected}". Preview domains require platform auth and cannot serve API requests. Please set VITE_API_URL to your published backend URL.`
+    `[Lokah API] Rejected invalid preview API URL: "${rawInjected}". Falling back to production backend: ${FALLBACK_API_URL}`
   );
-  resolvedUrl = '';
+  resolvedUrl = FALLBACK_API_URL;
 }
 
-// Normalize: ensure trailing /api path without double slashes
-export const API_URL: string = resolvedUrl
-  ? (resolvedUrl.endsWith('/api') ? resolvedUrl : `${resolvedUrl}/api`)
-  : '/api';
+// Normalize: ensure trailing /api path without double slashes and never relative
+const normalized = resolvedUrl.endsWith('/api') ? resolvedUrl : `${resolvedUrl}/api`;
+
+export const API_URL: string = normalized.startsWith('http') ? normalized : FALLBACK_API_URL;
