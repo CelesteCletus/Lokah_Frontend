@@ -163,23 +163,41 @@ const buildOptions = (options: RequestInit = {}): RequestInit => {
   };
 };
 
+// Deduplicated silent token refresh: multiple concurrent 401s share a single refresh call
+let refreshPromise: Promise<boolean> | null = null;
+
+const doTokenRefresh = async (): Promise<boolean> => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        return refreshRes.ok;
+      } catch {
+        return false;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+  }
+  return refreshPromise;
+};
+
 // Helper: Central Fetch with Credentials (HttpOnly cookies)
 // Automatically retries once after a silent token-refresh on 401 responses
 // so that access-token expiry is transparent to callers.
-const request = async (url: string, options: RequestInit = {}, _isRetry = false): Promise<unknown> => {
+const request = async <T = any>(url: string, options: RequestInit = {}, _isRetry = false): Promise<T> => {
   const response = await fetch(`${API_URL}${url}`, buildOptions(options));
 
   // Only attempt silent refresh on protected business endpoints, not auth endpoints themselves
   const isAuthEndpoint = url.startsWith('/auth/login') || url.startsWith('/auth/refresh') || url.startsWith('/auth/logout');
   if (response.status === 401 && !_isRetry && !isAuthEndpoint) {
-    // Try to refresh the access token silently using the refresh-token cookie
-    try {
-      const refreshRes = await fetch(`${API_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
-      if (refreshRes.ok) {
-        // Retry the original request once with the new cookie
-        return request(url, options, true);
-      }
-    } catch { /* ignore refresh errors – fall through to throw */ }
+    const refreshed = await doTokenRefresh();
+    if (refreshed) {
+      return request<T>(url, options, true);
+    }
   }
 
   if (!response.ok) {
@@ -187,7 +205,7 @@ const request = async (url: string, options: RequestInit = {}, _isRetry = false)
     throw new Error(errData.error || `HTTP error ${response.status}`);
   }
 
-  if (response.status === 204) return null;
+  if (response.status === 204) return null as T;
   return response.json();
 };
 
@@ -257,11 +275,33 @@ export const removeAdminAccount = async (id: number): Promise<void> => {
    ============================================================================ */
 export const resolveUploadUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  if (url.startsWith('/uploads/')) {
-    const baseUrl = API_URL.replace('/api', '');
-    return `${baseUrl}${url}`;
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  const backendBase = API_URL.replace(/\/api\/?$/, '');
+
+  // If already pointing to the production backend
+  if (trimmed.startsWith('https://6qxwqtx3i8.c40.airoapp.ai')) {
+    return trimmed;
   }
-  return url;
+
+  // If it contains localhost or 127.0.0.1
+  if (trimmed.includes('localhost:') || trimmed.includes('127.0.0.1:')) {
+    const idx = trimmed.indexOf('/uploads/');
+    if (idx !== -1) {
+      return `${backendBase}${trimmed.substring(idx)}`;
+    }
+  }
+
+  // If relative path starting with /uploads/ or uploads/
+  if (trimmed.startsWith('/uploads/')) {
+    return `${backendBase}${trimmed}`;
+  }
+  if (trimmed.startsWith('uploads/')) {
+    return `${backendBase}/${trimmed}`;
+  }
+
+  return trimmed;
 };
 
 export const fileToBase64 = (file: File): Promise<string> => {
@@ -353,14 +393,39 @@ export const getProperties = async (): Promise<Property[]> => {
     const rawProps = await request('/properties');
     return rawProps.map((p: any) => {
       const name = p.name || p.title || 'Untitled Property';
-      const rawImages = (Array.isArray(p.images) && p.images.length > 0)
-        ? p.images
-        : (p.hero_image || p.heroImage ? [p.hero_image || p.heroImage] : (p.image ? [p.image] : []));
       
-      const resolvedImages = rawImages.map((img: string) => resolveUploadUrl(img));
+      let rawImages: string[] = [];
+      if (Array.isArray(p.images) && p.images.length > 0) {
+        rawImages = p.images;
+      } else if (typeof p.images === 'string' && p.images.trim()) {
+        try {
+          const parsed = JSON.parse(p.images);
+          if (Array.isArray(parsed)) rawImages = parsed;
+        } catch {
+          rawImages = p.images.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+      }
+
+      if (rawImages.length === 0 && Array.isArray(p.gallery) && p.gallery.length > 0) {
+        rawImages = p.gallery;
+      } else if (rawImages.length === 0 && typeof p.gallery === 'string' && p.gallery.trim()) {
+        try {
+          const parsed = JSON.parse(p.gallery);
+          if (Array.isArray(parsed)) rawImages = parsed;
+        } catch {
+          rawImages = p.gallery.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+      }
+
+      const heroCandidate = p.hero_image || p.heroImage || p.featured_image || p.image;
+      if (rawImages.length === 0 && heroCandidate) {
+        rawImages = [heroCandidate];
+      }
+
+      const resolvedImages = rawImages.map((img: string) => resolveUploadUrl(img)).filter(Boolean);
       const heroImage = resolvedImages.length > 0
         ? resolvedImages[0]
-        : (resolveUploadUrl(p.hero_image || p.heroImage || p.image) || '/images/hero/projects-hero.jpg');
+        : (resolveUploadUrl(heroCandidate) || '/images/hero/projects-hero.jpg');
 
       return {
         id: p.id,
@@ -404,6 +469,7 @@ export const saveProperty = async (
   const isUpdate = property.id && property.id > 0;
   
   // Map frontend property to backend payload
+  const hasUploadedGallery = Boolean(files?.gallery && files.gallery.length > 0);
   const backendData: any = {
     name: property.name,
     title: property.name,
@@ -420,8 +486,8 @@ export const saveProperty = async (
     builtArea: property.sqft,
     landArea: property.landArea || '',
     heroImage: property.image,
-    images: property.images || [],
-    gallery: property.images || [],
+    // When uploading new gallery files, only send existing remote images if any
+    images: property.images && property.images.length > 0 ? property.images : (hasUploadedGallery ? undefined : []),
     amenities: normalizeAmenities(property.amenities || []),
     features: normalizeAmenities(property.amenities || []),
     description: property.description,
@@ -434,6 +500,11 @@ export const saveProperty = async (
     virtualTourLink: property.virtualTourLink || '',
     floorPlan: property.floorPlan || ''
   };
+
+  // Only pass gallery text field if no files are being uploaded
+  if (!hasUploadedGallery && property.images && property.images.length > 0) {
+    backendData.gallery = property.images;
+  }
 
   let body: any = JSON.stringify(backendData);
   let headers: any = {};

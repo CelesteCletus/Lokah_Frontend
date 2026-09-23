@@ -18,6 +18,7 @@ import {
   Compass,
 } from 'lucide-react';
 import type { Property } from '../data/sampleData';
+import { formatPropertyDisplayLocation } from '../lib/propertyContent';
 
 interface PropertyDetailsModalProps {
   property: Property | null;
@@ -175,7 +176,7 @@ export default function PropertyDetailsModal({ property, onClose, onBookVisit }:
               </h2>
               <div className="flex items-center gap-1.5 text-ivory-400 text-xs md:text-sm">
                 <MapPin className="w-4 h-4 text-champagne-400" />
-                <span className="font-body">{property.location} - {property.area}</span>
+                <span className="font-body">{formatPropertyDisplayLocation(property)}</span>
               </div>
 
               {/* Tabs Switcher */}

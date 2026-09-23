@@ -83,13 +83,38 @@ const TAGLINES_BY_TYPE: Record<Property['type'], string[]> = {
   ],
 };
 
+export function formatPropertyDisplayLocation(property: { location?: string; area?: string }): string {
+  const area = property.area?.trim();
+  const rawLocation = property.location?.trim() || '';
+
+  // Remove any pincode (5 or 6 digits) and trailing commas/spaces
+  const cleanedLocation = rawLocation
+    .replace(/,\s*\d{5,6}\b|\b\d{5,6}\b/g, '')
+    .replace(/,\s*$/, '')
+    .trim();
+
+  if (area) {
+    if (cleanedLocation && cleanedLocation.toLowerCase() !== area.toLowerCase()) {
+      const stateOrCity = cleanedLocation.includes('Kerala') ? 'Kerala' : cleanedLocation;
+      return `${area}, ${stateOrCity}`;
+    }
+    return `${area}, Kerala`;
+  }
+
+  return cleanedLocation || 'Kerala';
+}
+
 export function getTagline(property: Property): string {
+  if (property.tagline && property.tagline.trim()) {
+    return property.tagline.trim();
+  }
   const options = TAGLINES_BY_TYPE[property.type] ?? TAGLINES_BY_TYPE.Villa;
   return options[property.id % options.length];
 }
 
 export function getStoryOpening(property: Property): string {
-  return `More than a place to live, ${property.name} in ${property.area}, ${property.location.split(',')[0]} is a space designed for the life that unfolds within it.`;
+  const displayLocation = formatPropertyDisplayLocation(property);
+  return `More than a place to live, ${property.name} in ${displayLocation} is a space designed for the life that unfolds within it.`;
 }
 
 interface LifestyleMoment {
@@ -161,7 +186,8 @@ export function getLifestyleGroups(property: Property): LifestyleGroup[] {
 }
 
 export function getLocationNarrative(property: Property): string {
-  return `Set in ${property.area}, ${property.name} keeps you close to everything that matters \u2014 stay connected to the city while enjoying the peace of a private residential enclave.`;
+  const placeName = property.area?.trim() || property.location?.split(',')[0]?.trim() || 'Kerala';
+  return `Set in ${placeName}, this property is close to everything that matters \u2014 stay connected to the city while enjoying the peace of a private residential enclave.`;
 }
 
 export const CONSTRUCTION_PHILOSOPHY = {

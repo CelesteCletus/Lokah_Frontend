@@ -28,6 +28,7 @@ import {
   getLifestyleMoments,
   getLifestyleGroups,
   getLocationNarrative,
+  formatPropertyDisplayLocation,
   CONSTRUCTION_PHILOSOPHY,
 } from '../../lib/propertyContent';
 import NotFound from '../NotFound';
@@ -214,7 +215,17 @@ export default function PropertyExperience() {
       {/* ===================== SECTION 1 — Cinematic Hero ===================== */}
       <section ref={heroRef} className="relative h-screen flex items-end overflow-hidden">
         <motion.div style={{ scale: heroScale }} className="absolute inset-0">
-          <img src={property.image} alt={property.name} className="w-full h-full object-cover" />
+          <img
+            src={property.image}
+            alt={property.name}
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.src.includes('/images/hero/projects-hero.jpg')) {
+                target.src = '/images/hero/projects-hero.jpg';
+              }
+            }}
+            className="w-full h-full object-cover"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-matte-black via-matte-black/40 to-black/30" />
           <div className="absolute inset-0 bg-gradient-to-r from-matte-black/50 via-transparent to-matte-black/50" />
         </motion.div>
@@ -229,7 +240,7 @@ export default function PropertyExperience() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="font-body text-champagne-400 text-xs sm:text-sm tracking-[0.35em] uppercase font-semibold mb-5 block"
           >
-            {property.location}
+            {formatPropertyDisplayLocation(property)}
           </motion.span>
 
           <motion.h1
@@ -409,6 +420,12 @@ export default function PropertyExperience() {
                 transition={{ duration: 0.8, ease: LUXE_EASE }}
                 src={images[galleryIndex]}
                 alt={`${property.name} — ${galleryCaption}`}
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.src.includes('/images/hero/projects-hero.jpg')) {
+                    target.src = '/images/hero/projects-hero.jpg';
+                  }
+                }}
                 className="w-full h-full object-cover"
               />
             </AnimatePresence>
@@ -468,11 +485,11 @@ export default function PropertyExperience() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.8, ease: LUXE_EASE }}
-          className="grid grid-cols-2 md:grid-cols-4 divide-y-0 md:divide-x divide-ivory-400/10 border-y border-ivory-400/10"
+          className="flex flex-wrap items-stretch justify-center divide-y md:divide-y-0 md:divide-x divide-ivory-400/10 border-y border-ivory-400/10 max-w-4xl mx-auto"
         >
           {[
             { icon: HomeIcon, label: 'Type', value: property.type },
-            ...(property.bhk !== 'NA' ? [{ icon: BedDouble, label: 'Configuration', value: property.bhk }] : []),
+            ...(property.bhk && property.bhk !== 'NA' ? [{ icon: BedDouble, label: 'Configuration', value: property.bhk }] : []),
             {
               icon: Maximize,
               label: property.type === 'Plot' ? 'Land Area' : 'Built Area',
@@ -480,7 +497,7 @@ export default function PropertyExperience() {
             },
             { icon: MapPin, label: 'Status', value: property.status },
           ].map((fact) => (
-            <div key={fact.label} className="p-6 md:p-8 text-center flex flex-col items-center gap-2">
+            <div key={fact.label} className="flex-1 min-w-[140px] sm:min-w-[180px] p-6 md:p-8 text-center flex flex-col items-center justify-center gap-2">
               <fact.icon className="w-5 h-5 text-gold-450 mb-1" />
               <span className="font-body text-[11px] uppercase tracking-widest text-ivory-400">{fact.label}</span>
               <span className="font-display text-lg text-ivory-50">{fact.value}</span>
@@ -500,7 +517,7 @@ export default function PropertyExperience() {
             Location Experience
           </span>
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-light text-ivory-50 mb-6">
-            {property.area}, <span className="text-gradient-gold font-medium">{property.location.split(',')[0]}</span>
+            {property.area || property.location.split(',')[0]}, <span className="text-gradient-gold font-medium">Kerala</span>
           </h2>
           <motion.p
             initial={{ opacity: 0, y: 15 }}

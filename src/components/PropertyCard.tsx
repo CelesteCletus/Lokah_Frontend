@@ -1,6 +1,7 @@
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { MapPin, BedDouble, Maximize, ArrowUpRight } from 'lucide-react';
 import type { Property } from '../data/sampleData';
+import { formatPropertyDisplayLocation } from '../lib/propertyContent';
 
 interface PropertyCardProps {
   property: Property;
@@ -65,6 +66,12 @@ export default function PropertyCard({ property, index, onClick }: PropertyCardP
           <img
             src={property.image}
             alt={property.name}
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.src.includes('/images/hero/projects-hero.jpg')) {
+                target.src = '/images/hero/projects-hero.jpg';
+              }
+            }}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-matte-black via-transparent to-transparent opacity-60" />
@@ -114,7 +121,7 @@ export default function PropertyCard({ property, index, onClick }: PropertyCardP
 
           <div className="flex items-center gap-1.5 mb-4">
             <MapPin className="w-4 h-4 text-champagne-400" />
-            <span className="font-body text-ivory-400 text-sm">{property.location}</span>
+            <span className="font-body text-ivory-400 text-sm">{formatPropertyDisplayLocation(property)}</span>
           </div>
 
           <div className="flex items-center gap-4 pt-4 border-t border-ivory-400/10">

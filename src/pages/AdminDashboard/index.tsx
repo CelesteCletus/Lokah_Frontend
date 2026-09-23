@@ -61,21 +61,19 @@ import StaffSupportDesk from '../../components/Admin/StaffSupportDesk';
 import { API_URL } from '../../lib/apiUrl';
 
 const extractLocationAndArea = (formattedAddress: string) => {
-  const parts = formattedAddress.split(',').map(p => p.trim()).filter(Boolean);
-  if (parts.length === 0) return { location: 'Kochi, Kerala', area: 'Kakkanad' };
+  const rawParts = formattedAddress.split(',').map(p => p.trim()).filter(Boolean);
+  if (rawParts.length === 0) return { location: 'Kochi, Kerala', area: 'Kakkanad' };
   
-  const area = parts[0];
-  let cityOrDistrict = 'Kochi';
+  const area = rawParts[0];
+  // Filter out pincodes (5-6 digit numbers) and country name
+  const cleanParts = rawParts.filter(p => !/^\d{5,6}$/.test(p) && p.toLowerCase() !== 'india');
+  
   let state = 'Kerala';
-  
-  if (parts.length >= 3) {
-    state = parts[parts.length - 2];
-    cityOrDistrict = parts[parts.length - 3];
-  } else if (parts.length === 2) {
-    state = parts[1];
+  if (cleanParts.length >= 2) {
+    state = cleanParts[cleanParts.length - 1];
   }
   
-  const location = `${cityOrDistrict}, ${state}`;
+  const location = `${area}, ${state}`;
   return { location, area };
 };
 
@@ -181,32 +179,44 @@ export default function AdminDashboard() {
 
   // Check Express server health and auth state on mount
   useEffect(() => {
+    let isMounted = true;
     const initSession = async () => {
       try {
         const healthRes = await fetch(`${API_URL}/health`, { credentials: 'include' });
         const online = healthRes.ok;
-        setApiConnected(online);
-
-        if (online) {
-          try {
-            const { admin } = await checkAdminSession();
-            setCurrentAdmin(admin);
-          } catch (authErr) {
-            navigate('/team-login');
-            return;
+        if (!online) {
+          if (isMounted) {
+            setApiConnected(false);
+            navigate('/team-login', { replace: true });
           }
-        } else {
-          // No backend reachable: there is no local/offline admin session. Deny access.
-          navigate('/team-login');
           return;
         }
-        setAuthChecked(true);
+
+        if (isMounted) setApiConnected(true);
+
+        try {
+          const { admin } = await checkAdminSession();
+          if (isMounted) {
+            setCurrentAdmin(admin);
+            setAuthChecked(true);
+          }
+        } catch (authErr) {
+          if (isMounted) {
+            navigate('/team-login', { replace: true });
+          }
+          return;
+        }
       } catch (err) {
-        setApiConnected(false);
-        navigate('/team-login');
+        if (isMounted) {
+          setApiConnected(false);
+          navigate('/team-login', { replace: true });
+        }
       }
     };
     initSession();
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
 
   // Toast notification timer
@@ -239,7 +249,7 @@ export default function AdminDashboard() {
 
   // Master refresh function for customer enquiries & live stats & support chat
   const refreshEnquiriesAndStats = async () => {
-    if (!apiConnected) return;
+    if (!apiConnected || !authChecked || !currentAdmin) return;
     try {
       const [enqRes, conRes, svRes, dashboardStats, supportConvs] = await Promise.all([
         getEnquiries().catch(() => []),
@@ -352,7 +362,7 @@ export default function AdminDashboard() {
 
   // Real-time auto-polling & submission event listener
   useEffect(() => {
-    if (!apiConnected || !authChecked) return;
+    if (!apiConnected || !authChecked || !currentAdmin) return;
 
     refreshEnquiriesAndStats();
 
@@ -378,14 +388,16 @@ export default function AdminDashboard() {
       clearInterval(pollTimer);
       window.removeEventListener('new_enquiry_submitted', handleCustomSubmission);
     };
-  }, [apiConnected, authChecked]);
+  }, [apiConnected, authChecked, currentAdmin]);
 
   // Fetch data
   useEffect(() => {
+    if (!authChecked || !currentAdmin) return;
     fetchData();
-  }, [activeTab, careersSubTab, apiConnected]);
+  }, [activeTab, careersSubTab, apiConnected, authChecked, currentAdmin]);
 
   const fetchData = async () => {
+    if (!authChecked || !currentAdmin) return;
     setLoading(true);
     try {
       if (activeTab === 'properties') {

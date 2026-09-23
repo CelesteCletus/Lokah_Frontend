@@ -14,20 +14,23 @@ const rawInjected = (
   ''
 ).trim().replace(/\/+$/, '');
 
+const allowPreview = import.meta.env.VITE_ALLOW_PREVIEW_API === 'true';
 const isAiroPreviewUrl =
-  rawInjected.includes('.preview.') && rawInjected.includes('.airoapp.ai');
+  !allowPreview && rawInjected.includes('.preview.') && rawInjected.includes('.airoapp.ai');
 
 let resolvedUrl = rawInjected;
 
 if (!resolvedUrl) {
-  console.warn(
-    `[Lokah API] VITE_API_URL is not set in build environment. Falling back to production backend: ${FALLBACK_API_URL}`
-  );
+  if (import.meta.env.DEV) {
+    console.info(`[Lokah API] VITE_API_URL not set. Using production backend: ${FALLBACK_API_URL}`);
+  }
   resolvedUrl = FALLBACK_API_URL;
 } else if (isAiroPreviewUrl) {
-  console.warn(
-    `[Lokah API] Rejected invalid preview API URL: "${rawInjected}". Falling back to production backend: ${FALLBACK_API_URL}`
-  );
+  // GoDaddy Airo preview environments inject the frontend's preview URL into VITE_API_URL.
+  // Since the backend lives on production (6qxwqtx3i8.c40.airoapp.ai), route to it unless overridden.
+  if (import.meta.env.DEV) {
+    console.info(`[Lokah API] Redirecting preview URL to live backend: ${FALLBACK_API_URL}`);
+  }
   resolvedUrl = FALLBACK_API_URL;
 }
 

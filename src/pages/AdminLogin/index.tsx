@@ -29,21 +29,36 @@ export default function AdminLogin() {
     }
   }, []);
 
-  // Check if Express backend is online on page load
+  // Check if Express backend is online and verify if already authenticated
   useEffect(() => {
-    fetch(`${API_URL}/health`, { credentials: 'include' })
-      .then(res => setApiConnected(res.ok))
-      .catch(() => setApiConnected(false));
-  }, []);
-
-  // If already authenticated, redirect straight to dashboard
-  useEffect(() => {
-    if (apiConnected) {
-      checkAdminSession()
-        .then(() => navigate('/admin/dashboard'))
-        .catch(() => {});
-    }
-  }, [apiConnected, navigate]);
+    let isMounted = true;
+    const checkConnectionAndAuth = async () => {
+      try {
+        const res = await fetch(`${API_URL}/health`, { credentials: 'include' });
+        if (!isMounted) return;
+        const online = res.ok;
+        setApiConnected(online);
+        if (online) {
+          try {
+            await checkAdminSession();
+            if (isMounted) {
+              navigate('/admin/dashboard', { replace: true });
+            }
+          } catch {
+            // Not authenticated: stay on login page silently
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setApiConnected(false);
+        }
+      }
+    };
+    checkConnectionAndAuth();
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
