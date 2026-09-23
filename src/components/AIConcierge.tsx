@@ -74,6 +74,14 @@ function LiveChat({ agentOnline: initialOnline, onBack }: LiveChatProps) {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [agentOnline, setAgentOnline] = useState(initialOnline);
+
+  useEffect(() => {
+    setAgentOnline(initialOnline);
+  }, [initialOnline]);
+
+  useEffect(() => {
+    checkAgentPresence().then(setAgentOnline);
+  }, []);
   const [lastTimestamp, setLastTimestamp] = useState<string | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -558,7 +566,10 @@ export default function AIConcierge({
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setShowLiveChat(true)}
+                    onClick={() => {
+                      checkAgentPresence().then(setAgentOnline);
+                      setShowLiveChat(true);
+                    }}
                     className="w-full text-left p-4 rounded-xl bg-gradient-to-r from-gold-500/20 via-gold-500/10 to-transparent border border-gold-500/40 hover:border-gold-500/70 transition-all group cursor-pointer shadow-lg shadow-gold-500/5"
                   >
                     <div className="flex items-start gap-3">

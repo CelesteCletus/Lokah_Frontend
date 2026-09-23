@@ -113,6 +113,9 @@ export function getTagline(property: Property): string {
 }
 
 export function getStoryOpening(property: Property): string {
+  if (property.story && property.story.trim()) {
+    return property.story.trim();
+  }
   const displayLocation = formatPropertyDisplayLocation(property);
   return `More than a place to live, ${property.name} in ${displayLocation} is a space designed for the life that unfolds within it.`;
 }

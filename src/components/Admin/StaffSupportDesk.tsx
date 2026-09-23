@@ -154,12 +154,6 @@ export default function StaffSupportDesk() {
     };
   }, [agentIsOnline]);
 
-  // Mark offline on unmount
-  useEffect(() => {
-    return () => {
-      sendAgentOffline();
-    };
-  }, []);
 
   // Keep the inbox itself live — without this, a brand-new visitor
   // conversation only ever appears after a manual refresh or once some

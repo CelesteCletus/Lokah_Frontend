@@ -37,7 +37,6 @@ import CTASection from '../../components/CTASection';
 
 // Soft ease for luxury feel
 const LUXE_EASE = [0.16, 1, 0.3, 1] as const;
-const GALLERY_CAPTIONS = ['Living Spaces', 'Master Suite', 'Private Garden', 'Sunset Terrace', 'Community Spaces'];
 const MOMENT_ICONS: Record<string, typeof Sun> = {
   Morning: Sunrise,
   Afternoon: Sun,
@@ -185,16 +184,38 @@ export default function PropertyExperience() {
     return <div className="min-h-screen bg-matte-black" />;
   }
 
-  const images = property.images && property.images.length > 0 ? property.images : [property.image];
+  const isPlaceholderImage = (url: string) => {
+    if (!url) return true;
+    return (
+      url.includes('/images/projects/completed-1.jpg') ||
+      url.includes('/images/projects/completed-2.jpg') ||
+      url.includes('/images/services/interior-exterior.jpg') ||
+      url.includes('/images/services/property-development.jpg') ||
+      url.includes('/images/hero/projects-hero.jpg') ||
+      url.includes('/images/hero/home-hero.jpg') ||
+      url.includes('/images/hero/about-hero.jpg') ||
+      url.includes('/images/hero/services-hero.jpg')
+    );
+  };
+
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+
+  // If real user/admin photos exist, exclude sample placeholder assets
+  const rawList = property.images && property.images.length > 0 ? property.images : [property.image];
+  const userList = rawList.filter(img => Boolean(img) && !isPlaceholderImage(img));
+  const candidateImages = userList.length > 0 ? userList : rawList.filter(Boolean);
+  const images = candidateImages.filter(img => !failedImages.has(img));
+  const displayImages = images.length > 0 ? images : [property.image || '/images/hero/projects-hero.jpg'];
+
+  const safeGalleryIndex = Math.min(galleryIndex, Math.max(0, displayImages.length - 1));
+  const nextGalleryImage = () => setGalleryIndex((i) => (i + 1) % displayImages.length);
+  const prevGalleryImage = () => setGalleryIndex((i) => (i - 1 + displayImages.length) % displayImages.length);
+
   const tagline = getTagline(property);
   const storyOpening = getStoryOpening(property);
   const moments = getLifestyleMoments(property);
   const lifestyleGroups = getLifestyleGroups(property);
   const locationNarrative = getLocationNarrative(property);
-
-  const nextGalleryImage = () => setGalleryIndex((i) => (i + 1) % images.length);
-  const prevGalleryImage = () => setGalleryIndex((i) => (i - 1 + images.length) % images.length);
-  const galleryCaption = GALLERY_CAPTIONS[galleryIndex % GALLERY_CAPTIONS.length];
 
   return (
     <motion.div
@@ -413,29 +434,26 @@ export default function PropertyExperience() {
           <div className="relative aspect-[16/9] rounded-3xl overflow-hidden border border-gold-500/15 shadow-elegant">
             <AnimatePresence mode="wait">
               <motion.img
-                key={galleryIndex}
+                key={safeGalleryIndex}
                 initial={{ opacity: 0, scale: 1.06 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.8, ease: LUXE_EASE }}
-                src={images[galleryIndex]}
-                alt={`${property.name} — ${galleryCaption}`}
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (!target.src.includes('/images/hero/projects-hero.jpg')) {
-                    target.src = '/images/hero/projects-hero.jpg';
+                src={displayImages[safeGalleryIndex]}
+                alt={`${property.name} — Gallery Image ${safeGalleryIndex + 1}`}
+                onError={() => {
+                  const currentSrc = displayImages[safeGalleryIndex];
+                  if (currentSrc && !failedImages.has(currentSrc)) {
+                    setFailedImages(prev => new Set(prev).add(currentSrc));
+                    setGalleryIndex(prev => Math.max(0, Math.min(prev, displayImages.length - 2)));
                   }
                 }}
                 className="w-full h-full object-cover"
               />
             </AnimatePresence>
-            <div className="absolute inset-0 bg-gradient-to-t from-matte-black/80 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-matte-black/60 via-transparent to-transparent pointer-events-none" />
 
-            <span className="absolute bottom-6 left-6 font-display text-xl md:text-2xl text-ivory-50 font-light">
-              {galleryCaption}
-            </span>
-
-            {images.length > 1 && (
+            {displayImages.length > 1 && (
               <>
                 <button
                   onClick={prevGalleryImage}
@@ -453,14 +471,14 @@ export default function PropertyExperience() {
             )}
           </div>
 
-          {images.length > 1 && (
+          {displayImages.length > 1 && (
             <div className="flex justify-center gap-2 mt-6">
-              {images.map((_, i) => (
+              {displayImages.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setGalleryIndex(i)}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === galleryIndex ? 'bg-gold-500 w-8' : 'bg-ivory-400/30 w-1.5 hover:bg-ivory-400/60'
+                    i === safeGalleryIndex ? 'bg-gold-500 w-8' : 'bg-ivory-400/30 w-1.5 hover:bg-ivory-400/60'
                   }`}
                 />
               ))}
@@ -614,9 +632,6 @@ export default function PropertyExperience() {
         </div>
       </section>
 
-      {/* ===================== SECTION 9 — Testimonials ===================== */}
-      <Testimonials />
-
       {/* ===================== SECTION 8.5 — Floor Plan Layout ===================== */}
       {property.floorPlan && (
         <section className="py-20 md:py-28 max-w-5xl mx-auto px-6 lg:px-8 border-t border-ivory-400/10">
@@ -654,6 +669,9 @@ export default function PropertyExperience() {
           </motion.div>
         </section>
       )}
+
+      {/* ===================== SECTION 9 — Testimonials (Client Stories) ===================== */}
+      <Testimonials />
 
       {/* ===================== SECTION 10.5 — 360° YouTube Embed Preview ===================== */}
       {property.virtualTourLink && getYouTubeEmbedUrl(property.virtualTourLink) && (

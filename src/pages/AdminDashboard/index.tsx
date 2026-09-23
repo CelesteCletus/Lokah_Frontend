@@ -52,7 +52,8 @@ import {
   getAdminsList, createAdminAccount, removeAdminAccount, Admin,
   getJobsList, saveJobPosting, deleteJobPosting, getApplicationsList, Job, JobApplication,
   getDashboardStats, DashboardStats,
-  fetchAdminSupportConversations, SupportConversation
+  fetchAdminSupportConversations, SupportConversation,
+  sendSupportHeartbeat, sendAgentOffline
 } from '../../lib/db';
 import type { Property } from '../../data/sampleData';
 import LocationSelector from '../../components/Admin/LocationSelector';
@@ -448,9 +449,20 @@ export default function AdminDashboard() {
     }
   };
 
+  // Maintain staff online presence while logged in to the dashboard
+  useEffect(() => {
+    if (!apiConnected || !authChecked || !currentAdmin) return;
+    sendSupportHeartbeat();
+    const heartbeatInterval = setInterval(() => {
+      sendSupportHeartbeat();
+    }, 45000);
+    return () => clearInterval(heartbeatInterval);
+  }, [apiConnected, authChecked, currentAdmin]);
+
   const handleLogout = async () => {
     try {
       if (apiConnected) {
+        await sendAgentOffline().catch(() => {});
         await logoutAdmin();
       }
       localStorage.removeItem('lokah_sandbox_session');
@@ -1843,6 +1855,11 @@ export default function AdminDashboard() {
                         <option value="3 BHK">3 BHK</option>
                         <option value="4 BHK">4 BHK</option>
                         <option value="5 BHK">5 BHK</option>
+                        <option value="6 BHK">6 BHK</option>
+                        <option value="7 BHK">7 BHK</option>
+                        <option value="8 BHK">8 BHK</option>
+                        <option value="9 BHK">9 BHK</option>
+                        <option value="10 BHK">10 BHK</option>
                         <option value="NA">NA (Plots)</option>
                       </select>
                     </div>

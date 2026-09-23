@@ -10,7 +10,7 @@ interface PropertyFiltersProps {
   properties?: Property[];
 }
 
-const bhkOptions = ['1 BHK', '2 BHK', '3 BHK', '4 BHK', '5 BHK+', 'NA'];
+const bhkOptions = ['1 BHK', '2 BHK', '3 BHK', '4 BHK', '5 BHK', '6 BHK', '7 BHK', '8 BHK', '9 BHK', '10 BHK', 'NA'];
 const budgetRanges = [
   { label: 'Under ₹50 Lakhs', min: 0, max: 5000000 },
   { label: '₹50 Lakhs - ₹1 Cr', min: 5000000, max: 10000000 },

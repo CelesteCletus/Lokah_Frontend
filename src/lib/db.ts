@@ -901,9 +901,8 @@ export const sendVisitorMessage = async (
 // Protected: agent heartbeat
 export const sendSupportHeartbeat = async (): Promise<void> => {
   try {
-    await fetch(`${API_URL}/support/heartbeat`, {
+    await request('/support/heartbeat', {
       method: 'POST',
-      credentials: 'include',
     });
   } catch {
     // Silently ignore heartbeat errors
@@ -913,9 +912,8 @@ export const sendSupportHeartbeat = async (): Promise<void> => {
 // Protected: mark agent offline
 export const sendAgentOffline = async (): Promise<void> => {
   try {
-    await fetch(`${API_URL}/support/agent-offline`, {
+    await request('/support/agent-offline', {
       method: 'POST',
-      credentials: 'include',
     });
   } catch {
     // Silently ignore
