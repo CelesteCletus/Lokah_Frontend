@@ -94,6 +94,12 @@ export default function PropertyDetailsModal({ property, onClose, onBookVisit }:
                   transition={{ duration: 0.3 }}
                   src={images[currentImageIndex]}
                   alt={property.name}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.includes('/images/hero/projects-hero.jpg')) {
+                      target.src = '/images/hero/projects-hero.jpg';
+                    }
+                  }}
                   className="w-full h-full object-cover"
                 />
               </AnimatePresence>

@@ -663,6 +663,12 @@ export default function PropertyExperience() {
               <img
                 src={property.floorPlan}
                 alt={`${property.name} Floor Plan`}
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.src.includes('/images/hero/projects-hero.jpg')) {
+                    target.src = '/images/hero/projects-hero.jpg';
+                  }
+                }}
                 className="max-h-[500px] w-auto object-contain rounded-2xl"
               />
             )}

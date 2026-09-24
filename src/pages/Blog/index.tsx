@@ -7,6 +7,17 @@ import CTASection from '../../components/CTASection';
 import type { LayoutContextType } from '../../layouts/RootLayout';
 import type { Blog as BlogType } from '../../lib/db';
 
+// Shared fallback for blog cover images — mirrors the pattern already used for
+// property photos, so a missing/broken upload never shows the browser's raw
+// "broken image" icon on a live client-facing page.
+const BLOG_FALLBACK_IMAGE = '/images/blog/blog-1.jpg';
+const handleBlogImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  const target = e.currentTarget;
+  if (!target.src.includes(BLOG_FALLBACK_IMAGE)) {
+    target.src = BLOG_FALLBACK_IMAGE;
+  }
+};
+
 export default function Blog() {
   const { onOpenBooking, blogs } = useOutletContext<LayoutContextType>();
   const [activeCategory, setActiveCategory] = useState<'All' | 'Engineering' | 'Design' | 'Planning'>('All');
@@ -130,6 +141,7 @@ export default function Blog() {
               <img
                 src={featuredPost.image}
                 alt={featuredPost.title}
+                onError={handleBlogImageError}
                 className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-103"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-matte-950/65 to-transparent" />
@@ -209,6 +221,7 @@ export default function Blog() {
                     <img
                       src={post.image}
                       alt={post.title}
+                      onError={handleBlogImageError}
                       className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-103"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-matte-950/60 to-transparent" />
@@ -286,6 +299,7 @@ export default function Blog() {
                   <img
                     src={selectedArticle.image}
                     alt={selectedArticle.title}
+                    onError={handleBlogImageError}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-matte-950 via-matte-955/20 to-transparent" />
