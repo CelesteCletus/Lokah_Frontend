@@ -480,8 +480,11 @@ export default function AdminDashboard() {
   const handleOpenPropertyModal = (property: Property | null = null) => {
     setSelectedProperty(property);
     setPropBannerFile(null);
-    setPropBannerPreview(property?.image || '');
-    setPropGalleryItems(property?.images.map((img, idx) => ({ id: `remote-${idx}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, type: 'remote', url: img })) || []);
+    const heroImg = property?.image || '';
+    setPropBannerPreview(heroImg);
+    // Strictly isolate gallery from hero image in the editing panel
+    const galleryImages = (property?.images || []).filter(img => img && img !== heroImg);
+    setPropGalleryItems(galleryImages.map((img, idx) => ({ id: `remote-${idx}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, type: 'remote', url: img })));
     setPropBrochureFile(null);
     setPropBrochureName(property?.brochurePdf ? property.brochurePdf.split('/').pop() || 'brochure.pdf' : '');
     setPropCoordinates(property?.coordinates || null);
@@ -505,13 +508,32 @@ export default function AdminDashboard() {
       const isFeatured = formData.get('featured') === 'true';
 
       // Use the existing preview URL (remote URL) for the hero image if no new file was uploaded.
-      // If a new file was picked, pass it via filesPayload — the backend handles storing it.
       const heroImageUrl = propBannerPreview || '/images/projects/completed-1.jpg';
 
-      // For gallery: keep existing remote URLs as-is; new local files go into filesPayload.
+      // For gallery: keep existing remote URLs as-is (excluding hero); new local files go into filesPayload.
       const galleryUrls: string[] = propGalleryItems
-        .filter(item => item.type === 'remote')
+        .filter(item => item.type === 'remote' && item.url !== heroImageUrl)
         .map(item => item.url);
+
+      // Floor plan value resolution
+      let floorPlanValue = '';
+      if (propFloorPlanFile) {
+        floorPlanValue = ''; // Will be populated by backend via file upload
+      } else if (propFloorPlanName && selectedProperty?.floorPlan) {
+        floorPlanValue = selectedProperty.floorPlan;
+      } else {
+        floorPlanValue = ''; // Explicitly deleted/empty
+      }
+
+      // Brochure value resolution
+      let brochureValue = '';
+      if (propBrochureFile) {
+        brochureValue = '';
+      } else if (propBrochureName && selectedProperty?.brochurePdf) {
+        brochureValue = selectedProperty.brochurePdf;
+      } else {
+        brochureValue = '';
+      }
 
       // Validate that a location has been selected
       if (!propCoordinates || !propCoordinates.lat) {
@@ -552,9 +574,9 @@ export default function AdminDashboard() {
         nearby: selectedProperty?.nearby || [],
         featured: isFeatured,
         coordinates: propCoordinates!,
-        brochurePdf: selectedProperty?.brochurePdf || '',
+        brochurePdf: brochureValue,
         virtualTourLink: propVirtualTour,
-        floorPlan: selectedProperty?.floorPlan || ''
+        floorPlan: floorPlanValue
       };
 
       // Pass the actual File objects to saveProperty — it builds FormData and streams

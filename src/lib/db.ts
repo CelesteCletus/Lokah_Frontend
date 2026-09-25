@@ -280,22 +280,15 @@ export const resolveUploadUrl = (url: string | null | undefined): string => {
 
   const backendBase = API_URL.replace(/\/api\/?$/, '');
 
-  // If already pointing to the production backend
-  if (trimmed.startsWith('https://6qxwqtx3i8.c40.airoapp.ai')) {
+  // If already a Cloudinary or external cloud CDN URL, return as-is
+  if (trimmed.startsWith('https://res.cloudinary.com') || trimmed.startsWith('http://res.cloudinary.com')) {
     return trimmed;
   }
 
-  // If it contains localhost or 127.0.0.1
-  if (trimmed.includes('localhost:') || trimmed.includes('127.0.0.1:')) {
-    const idx = trimmed.indexOf('/uploads/');
-    if (idx !== -1) {
-      return `${backendBase}${trimmed.substring(idx)}`;
-    }
-  }
-
-  // If relative path starting with /uploads/ or uploads/
-  if (trimmed.startsWith('/uploads/')) {
-    return `${backendBase}${trimmed}`;
+  // If pointing to any backend host or localhost with an /uploads/ path
+  const uploadsIdx = trimmed.indexOf('/uploads/');
+  if (uploadsIdx !== -1) {
+    return `${backendBase}${trimmed.substring(uploadsIdx)}`;
   }
   if (trimmed.startsWith('uploads/')) {
     return `${backendBase}/${trimmed}`;
@@ -303,6 +296,30 @@ export const resolveUploadUrl = (url: string | null | undefined): string => {
 
   return trimmed;
 };
+
+/**
+ * Normalizes URLs before saving to backend so that MySQL never stores hardcoded hostnames.
+ * Cloudinary/CDN URLs are preserved; local/backend URLs are stripped down to relative /uploads/... paths.
+ */
+export const normalizeStorageUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  // Cloudinary / external cloud assets remain absolute
+  if (trimmed.startsWith('https://res.cloudinary.com') || trimmed.startsWith('http://res.cloudinary.com')) {
+    return trimmed;
+  }
+
+  // Strip backend host / localhost / airoapp and store clean relative path
+  const uploadsIdx = trimmed.indexOf('/uploads/');
+  if (uploadsIdx !== -1) {
+    return trimmed.substring(uploadsIdx);
+  }
+
+  return trimmed;
+};
+
 
 export const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -417,15 +434,17 @@ export const getProperties = async (): Promise<Property[]> => {
         }
       }
 
+      // 1. Resolve Hero Image (priority: p.hero_image, p.heroImage, p.image, p.featured_image)
       const heroCandidate = p.hero_image || p.heroImage || p.featured_image || p.image;
-      if (rawImages.length === 0 && heroCandidate) {
-        rawImages = [heroCandidate];
-      }
+      const heroImage = heroCandidate
+        ? resolveUploadUrl(heroCandidate)
+        : (rawImages.length > 0 ? resolveUploadUrl(rawImages[0]) : '/images/hero/projects-hero.jpg');
 
-      const resolvedImages = rawImages.map((img: string) => resolveUploadUrl(img)).filter(Boolean);
-      const heroImage = resolvedImages.length > 0
-        ? resolvedImages[0]
-        : (resolveUploadUrl(heroCandidate) || '/images/hero/projects-hero.jpg');
+      // 2. Resolve Gallery Images (strictly exclude hero image to avoid duplicate presentation)
+      const resolvedImages = rawImages
+        .map((img: string) => resolveUploadUrl(img))
+        .filter(Boolean)
+        .filter((img: string) => img !== heroImage);
 
       return {
         id: p.id,
@@ -440,7 +459,7 @@ export const getProperties = async (): Promise<Property[]> => {
         sqft: Number(p.sqft || p.sq_ft || p.built_area || 0),
         landArea: p.landArea || p.land_area || '',
         image: heroImage,
-        images: resolvedImages.length > 0 ? resolvedImages : [heroImage],
+        images: resolvedImages,
         amenities: normalizeAmenities(p.amenities || p.features || []),
         description: p.description || '',
         tagline: p.tagline || '',
@@ -468,7 +487,12 @@ export const saveProperty = async (
 ): Promise<Property> => {
   const isUpdate = property.id && property.id > 0;
   
-  // Map frontend property to backend payload
+  // Normalize existing URLs to relative paths (or keep Cloudinary) to avoid hardcoded domain pollution
+  const normalizedHero = normalizeStorageUrl(property.image);
+  const normalizedGallery = (property.images || [])
+    .map(img => normalizeStorageUrl(img))
+    .filter(img => img && img !== normalizedHero);
+
   const hasUploadedGallery = Boolean(files?.gallery && files.gallery.length > 0);
   const backendData: any = {
     name: property.name,
@@ -485,9 +509,10 @@ export const saveProperty = async (
     sqFt: property.sqft,
     builtArea: property.sqft,
     landArea: property.landArea || '',
-    heroImage: property.image,
+    heroImage: normalizedHero,
     // When uploading new gallery files, only send existing remote images if any
-    images: property.images && property.images.length > 0 ? property.images : (hasUploadedGallery ? undefined : []),
+    images: normalizedGallery,
+    gallery: normalizedGallery,
     amenities: normalizeAmenities(property.amenities || []),
     features: normalizeAmenities(property.amenities || []),
     description: property.description,
@@ -496,15 +521,10 @@ export const saveProperty = async (
     nearby: property.nearby || [],
     featured: property.featured,
     coordinates: property.coordinates,
-    brochurePdf: property.brochurePdf || '',
+    brochurePdf: property.brochurePdf ? normalizeStorageUrl(property.brochurePdf) : '',
     virtualTourLink: property.virtualTourLink || '',
-    floorPlan: property.floorPlan || ''
+    floorPlan: property.floorPlan ? normalizeStorageUrl(property.floorPlan) : ''
   };
-
-  // Only pass gallery text field if no files are being uploaded
-  if (!hasUploadedGallery && property.images && property.images.length > 0) {
-    backendData.gallery = property.images;
-  }
 
   let body: any = JSON.stringify(backendData);
   let headers: any = {};
@@ -538,6 +558,12 @@ export const saveProperty = async (
   if (files && (files.heroImage || files.gallery || files.brochure || files.floorPlan)) {
     const formData = new FormData();
     Object.keys(backendData).forEach(key => {
+      // Avoid key collision between string value and file value
+      if (key === 'heroImage' && files.heroImage) return;
+      if (key === 'floorPlan' && files.floorPlan) return;
+      if (key === 'brochure' && files.brochure) return;
+      if (key === 'brochurePdf' && files.brochure) return;
+
       if (typeof backendData[key] === 'object' && backendData[key] !== null) {
         formData.append(key, JSON.stringify(backendData[key]));
       } else {

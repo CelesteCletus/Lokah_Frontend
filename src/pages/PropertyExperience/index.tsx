@@ -116,6 +116,7 @@ export default function PropertyExperience() {
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 80]);
 
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [floorPlanFailed, setFloorPlanFailed] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
 
@@ -201,11 +202,13 @@ export default function PropertyExperience() {
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
   // If real user/admin photos exist, exclude sample placeholder assets
-  const rawList = property.images && property.images.length > 0 ? property.images : [property.image];
-  const userList = rawList.filter(img => Boolean(img) && !isPlaceholderImage(img));
-  const candidateImages = userList.length > 0 ? userList : rawList.filter(Boolean);
+  const rawList = (property.images && property.images.length > 0 ? property.images : [property.image]).filter(Boolean);
+  const userList = rawList.filter(img => !isPlaceholderImage(img));
+  const candidateImages = userList.length > 0 ? userList : rawList;
   const images = candidateImages.filter(img => !failedImages.has(img));
-  const displayImages = images.length > 0 ? images : [property.image || '/images/hero/projects-hero.jpg'];
+  const displayImages = images.length > 0 
+    ? images 
+    : (property.image && !failedImages.has(property.image) ? [property.image] : ['/images/hero/projects-hero.jpg']);
 
   const safeGalleryIndex = Math.min(galleryIndex, Math.max(0, displayImages.length - 1));
   const nextGalleryImage = () => setGalleryIndex((i) => (i + 1) % displayImages.length);
@@ -659,18 +662,29 @@ export default function PropertyExperience() {
               >
                 <Download className="w-4 h-4" /> Preview Floor Plan PDF
               </a>
-            ) : (
+            ) : !floorPlanFailed ? (
               <img
                 src={property.floorPlan}
                 alt={`${property.name} Floor Plan`}
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (!target.src.includes('/images/hero/projects-hero.jpg')) {
-                    target.src = '/images/hero/projects-hero.jpg';
-                  }
-                }}
+                onError={() => setFloorPlanFailed(true)}
                 className="max-h-[500px] w-auto object-contain rounded-2xl"
               />
+            ) : (
+              <div className="py-16 px-8 text-center max-w-md mx-auto">
+                <div className="w-16 h-16 rounded-2xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center mx-auto mb-5 text-gold-400">
+                  <Compass className="w-8 h-8" />
+                </div>
+                <h3 className="font-display text-xl text-ivory-100 font-light mb-2">Architectural Layout on Request</h3>
+                <p className="font-body text-xs text-ivory-400 font-light leading-relaxed mb-6">
+                  Detailed structural blueprints and customized CAD layouts for {property.name} are available directly from our architectural engineering team.
+                </p>
+                <button
+                  onClick={() => onOpenBooking('consultation')}
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-champagne-500 to-gold-500 text-matte-black text-xs font-semibold uppercase tracking-wider hover:shadow-gold transition-all cursor-pointer"
+                >
+                  Request Blueprint Layout
+                </button>
+              </div>
             )}
           </motion.div>
         </section>
