@@ -53,7 +53,8 @@ import {
   getJobsList, saveJobPosting, deleteJobPosting, getApplicationsList, Job, JobApplication,
   getDashboardStats, DashboardStats,
   fetchAdminSupportConversations, SupportConversation,
-  sendSupportHeartbeat, sendAgentOffline
+  sendSupportHeartbeat, sendAgentOffline,
+  normalizeStorageUrl
 } from '../../lib/db';
 import type { Property } from '../../data/sampleData';
 import LocationSelector from '../../components/Admin/LocationSelector';
