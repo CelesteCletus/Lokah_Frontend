@@ -597,7 +597,7 @@ export const saveProperty = async (
     }
   );
 
-  return getProperties().then(list => list.find(p => p.id === saved.id) || property);
+  return saved || property;
 };
 
 export const deleteProperty = async (id: number): Promise<void> => {

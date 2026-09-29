@@ -317,20 +317,24 @@ export async function compressFile(
   file: File,
   options: CompressOptions = {}
 ): Promise<CompressResult> {
-  const type = file.type.toLowerCase();
+  try {
+    const type = file.type.toLowerCase();
 
-  if (type === 'application/pdf') {
-    return compressPdf(file, options);
+    if (type === 'application/pdf') {
+      return await compressPdf(file, options);
+    }
+
+    if (
+      type.startsWith('image/') &&
+      ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'].includes(type)
+    ) {
+      return await compressImage(file, options);
+    }
+  } catch (err) {
+    console.warn('[compressFile] Compression failed or skipped, using original file:', err);
   }
 
-  if (
-    type.startsWith('image/') &&
-    ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'].includes(type)
-  ) {
-    return compressImage(file, options);
-  }
-
-  // Unsupported type — return as-is
+  // Unsupported type or fallback — return as-is
   return {
     file,
     originalSize: file.size,

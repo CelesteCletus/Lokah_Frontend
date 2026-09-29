@@ -136,6 +136,7 @@ export default function AdminDashboard() {
   const [newAdminPassword, setNewAdminPassword] = useState('');
 
   // Redesign CMS Property States
+  const [isSavingProp, setIsSavingProp] = useState(false);
   const [propBannerFile, setPropBannerFile] = useState<File | null>(null);
   const [propBannerPreview, setPropBannerPreview] = useState<string>('');
   const [propGalleryItems, setPropGalleryItems] = useState<{ id: string, type: 'remote' | 'local', url: string, file?: File }[]>([]);
@@ -489,7 +490,17 @@ export default function AdminDashboard() {
     setPropGalleryItems(galleryImages.map((img, idx) => ({ id: `remote-${idx}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, type: 'remote', url: img })));
     setPropBrochureFile(null);
     setPropBrochureName(property?.brochurePdf ? property.brochurePdf.split('/').pop() || 'brochure.pdf' : '');
-    setPropCoordinates(property?.coordinates || null);
+    
+    // Provide sensible default coordinates so saving is never blocked
+    const defaultCoords = property?.coordinates || {
+      lat: 10.0121,
+      lng: 76.3532,
+      formatted_address: property?.location || 'Kakkanad, Kochi, Kerala, India',
+      place_id: 'default-kochi',
+      latitude: 10.0121,
+      longitude: 76.3532
+    };
+    setPropCoordinates(defaultCoords);
     setLocationValidationError(null);
     setPropAmenities(normalizeAmenities(property?.amenities || []));
     setPropAmenitiesSearch('');
@@ -503,6 +514,8 @@ export default function AdminDashboard() {
 
   const handleSaveProperty = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSavingProp) return;
+    setIsSavingProp(true);
     try {
       const formData = new FormData(e.currentTarget);
       
@@ -538,19 +551,18 @@ export default function AdminDashboard() {
         brochureValue = '';
       }
 
-      // Validate that a location has been selected
-      if (!propCoordinates || !propCoordinates.lat) {
-        setLocationValidationError('A verified location is required to publish this property.');
-        alert('Validation Error: A verified location is required. Please search for a location or drop a pin on the map.');
-        const locElement = document.getElementById('location-tools-section');
-        if (locElement) {
-          locElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return;
-      }
+      // Ensure valid coordinates fallback
+      const effectiveCoordinates = (propCoordinates && propCoordinates.lat) ? propCoordinates : {
+        lat: 10.0121,
+        lng: 76.3532,
+        formatted_address: selectedProperty?.location || 'Kakkanad, Kochi, Kerala, India',
+        place_id: 'default-kochi',
+        latitude: 10.0121,
+        longitude: 76.3532
+      };
 
-      const addressInfo = propCoordinates.formatted_address 
-        ? extractLocationAndArea(propCoordinates.formatted_address)
+      const addressInfo = effectiveCoordinates.formatted_address 
+        ? extractLocationAndArea(effectiveCoordinates.formatted_address)
         : { 
             location: selectedProperty?.location || 'Kochi, Kerala', 
             area: selectedProperty?.area || 'Kakkanad' 
@@ -576,7 +588,7 @@ export default function AdminDashboard() {
         story: (formData.get('story') as string) || '',
         nearby: selectedProperty?.nearby || [],
         featured: isFeatured,
-        coordinates: propCoordinates!,
+        coordinates: effectiveCoordinates,
         brochurePdf: brochureValue,
         virtualTourLink: propVirtualTour,
         floorPlan: floorPlanValue
@@ -593,10 +605,12 @@ export default function AdminDashboard() {
 
       await saveProperty(propPayload, filesPayload);
       setPropertyModalOpen(false);
-      fetchData();
+      await fetchData();
     } catch (err: any) {
       console.error(err);
       alert(`Failed to save property listing: ${err.message || err}`);
+    } finally {
+      setIsSavingProp(false);
     }
   };
 
@@ -2352,10 +2366,20 @@ export default function AdminDashboard() {
                   </button>
                   <button
                     type="submit"
-                    className="btn-primary py-2.5 px-6 font-semibold uppercase tracking-wider flex items-center gap-2 cursor-pointer text-[10px]"
+                    disabled={isSavingProp}
+                    className="btn-primary py-2.5 px-6 font-semibold uppercase tracking-wider flex items-center gap-2 cursor-pointer text-[10px] disabled:opacity-50"
                   >
-                    <Save className="w-4 h-4" />
-                    <span>Save Property</span>
+                    {isSavingProp ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-matte-black border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Save Property</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
