@@ -116,6 +116,11 @@ export default function LocationSelector({ coordinates, onChange, validationErro
   useEffect(() => {
     if (!mapRef.current) return;
 
+    // Reset any dangling leaflet identifier on the DOM element
+    if ((mapRef.current as any)._leaflet_id) {
+      delete (mapRef.current as any)._leaflet_id;
+    }
+
     // Premium luxury gold icon style
     const goldIcon = L.divIcon({
       className: 'custom-gold-marker',
@@ -209,6 +214,9 @@ export default function LocationSelector({ coordinates, onChange, validationErro
       map.remove();
       mapInstanceRef.current = null;
       markerRef.current = null;
+      if (mapRef.current && (mapRef.current as any)._leaflet_id) {
+        delete (mapRef.current as any)._leaflet_id;
+      }
     };
   }, []);
 
