@@ -52,56 +52,64 @@ export async function compressImage(
   options: CompressOptions = {}
 ): Promise<CompressResult> {
   const {
-    maxDimension = 1600,
-    quality = 0.75,
-    maxBytes = 800 * 1024 // 800KB
+    maxDimension = 1920,
+    quality = 0.8
   } = options;
 
   const originalSize = file.size;
 
-  // Load file into an Image element
-  const bitmap = await createImageBitmap(file);
-  const { width, height } = bitmap;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const { width, height } = bitmap;
 
-  // Scale down if wider/taller than maxDimension
-  let targetW = width;
-  let targetH = height;
-  if (width > maxDimension || height > maxDimension) {
-    const ratio = Math.min(maxDimension / width, maxDimension / height);
-    targetW = Math.round(width * ratio);
-    targetH = Math.round(height * ratio);
+    let targetW = width;
+    let targetH = height;
+    if (width > maxDimension || height > maxDimension) {
+      const ratio = Math.min(maxDimension / width, maxDimension / height);
+      targetW = Math.round(width * ratio);
+      targetH = Math.round(height * ratio);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context unavailable');
+
+    ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+    bitmap.close();
+
+    const blob: Blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+        'image/jpeg',
+        quality
+      );
+    });
+
+    const baseName = file.name && file.name.includes('.') ? file.name.replace(/\.[^.]+$/, '') : (file.name || 'image');
+    const fileName = `${baseName}.jpg`;
+
+    const compressedFile = new File([blob], fileName, {
+      type: 'image/jpeg',
+      lastModified: Date.now()
+    });
+
+    return {
+      file: compressedFile,
+      originalSize,
+      compressedSize: compressedFile.size,
+      savedPercent: Math.round((1 - compressedFile.size / originalSize) * 100)
+    };
+  } catch (err) {
+    console.warn('[compressImage] Single-pass compression skipped, using original:', err);
+    return {
+      file,
+      originalSize,
+      compressedSize: originalSize,
+      savedPercent: 0
+    };
   }
-
-  // Draw onto an offscreen canvas
-  const canvas = new OffscreenCanvas(targetW, targetH);
-  const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(bitmap, 0, 0, targetW, targetH);
-  bitmap.close();
-
-  // Try progressively lower quality until we're under maxBytes
-  let currentQuality = quality;
-  let blob: Blob;
-
-  do {
-    blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: currentQuality });
-    if (blob.size <= maxBytes || currentQuality <= 0.3) break;
-    currentQuality -= 0.1;
-  } while (true);
-
-  const baseName = file.name && file.name.includes('.') ? file.name.replace(/\.[^.]+$/, '') : (file.name || 'image');
-  const fileName = `${baseName}.jpg`;
-
-  const compressedFile = new File([blob], fileName, {
-    type: 'image/jpeg',
-    lastModified: Date.now()
-  });
-
-  return {
-    file: compressedFile,
-    originalSize,
-    compressedSize: compressedFile.size,
-    savedPercent: Math.round((1 - compressedFile.size / originalSize) * 100)
-  };
 }
 
 // ─────────────────────────────────────────────
@@ -317,13 +325,29 @@ export async function compressFile(
   file: File,
   options: CompressOptions = {}
 ): Promise<CompressResult> {
+  // 1. Never re-compress PDFs in the browser — keeps original vector quality & 0ms lag
+  if (file.type === 'application/pdf') {
+    return {
+      file,
+      originalSize: file.size,
+      compressedSize: file.size,
+      savedPercent: 0
+    };
+  }
+
+  // 2. Images under 2.5 MB are already lightweight — upload directly
+  if (file.size <= 2.5 * 1024 * 1024) {
+    return {
+      file,
+      originalSize: file.size,
+      compressedSize: file.size,
+      savedPercent: 0
+    };
+  }
+
+  // 3. For large camera photos (> 2.5 MB), do a fast single-pass downscale
   try {
     const type = file.type.toLowerCase();
-
-    if (type === 'application/pdf') {
-      return await compressPdf(file, options);
-    }
-
     if (
       type.startsWith('image/') &&
       ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'].includes(type)
@@ -334,7 +358,6 @@ export async function compressFile(
     console.warn('[compressFile] Compression failed or skipped, using original file:', err);
   }
 
-  // Unsupported type or fallback — return as-is
   return {
     file,
     originalSize: file.size,

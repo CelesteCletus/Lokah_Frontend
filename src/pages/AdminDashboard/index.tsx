@@ -605,7 +605,8 @@ export default function AdminDashboard() {
 
       await saveProperty(propPayload, filesPayload);
       setPropertyModalOpen(false);
-      await fetchData();
+      // Instant refresh of properties list without freezing UI behind global loader
+      getProperties().then(setProperties).catch(() => {});
     } catch (err: any) {
       console.error(err);
       alert(`Failed to save property listing: ${err.message || err}`);
