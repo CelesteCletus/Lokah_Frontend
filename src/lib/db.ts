@@ -441,10 +441,11 @@ export const getProperties = async (): Promise<Property[]> => {
         : (rawImages.length > 0 ? resolveUploadUrl(rawImages[0]) : '/images/hero/projects-hero.jpg');
 
       // 2. Resolve Gallery Images (strictly exclude hero image to avoid duplicate presentation)
+      const normHeroUrl = normalizeStorageUrl(heroImage);
       const resolvedImages = rawImages
         .map((img: string) => resolveUploadUrl(img))
         .filter(Boolean)
-        .filter((img: string) => img !== heroImage);
+        .filter((img: string) => normalizeStorageUrl(img) !== normHeroUrl);
 
       return {
         id: p.id,

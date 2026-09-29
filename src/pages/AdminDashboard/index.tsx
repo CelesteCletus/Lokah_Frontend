@@ -483,7 +483,8 @@ export default function AdminDashboard() {
     const heroImg = property?.image || '';
     setPropBannerPreview(heroImg);
     // Strictly isolate gallery from hero image in the editing panel
-    const galleryImages = (property?.images || []).filter(img => img && img !== heroImg);
+    const normHero = normalizeStorageUrl(heroImg);
+    const galleryImages = (property?.images || []).filter(img => img && normalizeStorageUrl(img) !== normHero);
     setPropGalleryItems(galleryImages.map((img, idx) => ({ id: `remote-${idx}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, type: 'remote', url: img })));
     setPropBrochureFile(null);
     setPropBrochureName(property?.brochurePdf ? property.brochurePdf.split('/').pop() || 'brochure.pdf' : '');
@@ -511,8 +512,9 @@ export default function AdminDashboard() {
       const heroImageUrl = propBannerPreview || '/images/projects/completed-1.jpg';
 
       // For gallery: keep existing remote URLs as-is (excluding hero); new local files go into filesPayload.
+      const normHeroTarget = normalizeStorageUrl(heroImageUrl);
       const galleryUrls: string[] = propGalleryItems
-        .filter(item => item.type === 'remote' && item.url !== heroImageUrl)
+        .filter(item => item.type === 'remote' && normalizeStorageUrl(item.url) !== normHeroTarget)
         .map(item => item.url);
 
       // Floor plan value resolution
