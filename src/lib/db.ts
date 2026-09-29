@@ -1,5 +1,4 @@
 import { properties as initialProperties, Property } from '../data/sampleData';
-import { compressFile } from './compressor';
 import { normalizeAmenities } from './propertyContent';
 import { API_URL } from './apiUrl';
 
@@ -529,31 +528,6 @@ export const saveProperty = async (
 
   let body: any = JSON.stringify(backendData);
   let headers: any = {};
-
-  // Compress all files before uploading
-  if (files) {
-    if (files.heroImage) {
-      const r = await compressFile(files.heroImage, { maxDimension: 1600, quality: 0.78, maxBytes: 700 * 1024 });
-      files = { ...files, heroImage: r.file };
-      console.info(`[compressor] Hero image: ${(r.originalSize/1024).toFixed(0)}KB → ${(r.compressedSize/1024).toFixed(0)}KB (${r.savedPercent}% smaller)`);
-    }
-    if (files.gallery && files.gallery.length > 0) {
-      const compressed = await Promise.all(
-        files.gallery.map(f => compressFile(f, { maxDimension: 1400, quality: 0.75, maxBytes: 600 * 1024 }).then(r => r.file))
-      );
-      files = { ...files, gallery: compressed };
-    }
-    if (files.brochure) {
-      const r = await compressFile(files.brochure, { maxDimension: 1200, quality: 0.72 });
-      files = { ...files, brochure: r.file };
-      console.info(`[compressor] Brochure PDF: ${(r.originalSize/1024).toFixed(0)}KB → ${(r.compressedSize/1024).toFixed(0)}KB (${r.savedPercent}% smaller)`);
-    }
-    if (files.floorPlan) {
-      const r = await compressFile(files.floorPlan, { maxDimension: 1400, quality: 0.75 });
-      files = { ...files, floorPlan: r.file };
-      console.info(`[compressor] Floor plan: ${(r.originalSize/1024).toFixed(0)}KB → ${(r.compressedSize/1024).toFixed(0)}KB (${r.savedPercent}% smaller)`);
-    }
-  }
 
   // If uploading files, package as FormData
   if (files && (files.heroImage || files.gallery || files.brochure || files.floorPlan)) {
