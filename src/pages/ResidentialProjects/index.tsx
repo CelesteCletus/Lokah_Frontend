@@ -19,7 +19,12 @@ import type { LayoutContextType } from '../../layouts/RootLayout';
 
 export default function ResidentialProjects() {
   const { onOpenBooking, properties, handlePropertyClick } = useOutletContext<LayoutContextType>();
-  const residential = properties.filter((p) => p.type === 'Villa' || p.type === 'Apartment');
+  const residential = properties.filter((p) => 
+    p.type === 'Villa' || 
+    p.type === 'Apartment' || 
+    p.type === 'Land to Landmark' ||
+    (p.name && (p.name.toLowerCase().includes('villa') || p.name.toLowerCase().includes('apartment') || p.name.toLowerCase().includes('residential')))
+  );
 
   const livingMoments = [
     { title: 'Shared Living Spaces', desc: 'Open, light-filled rooms designed for everyday family gathering.', icon: Maximize2 },
@@ -196,7 +201,7 @@ export default function ResidentialProjects() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {residential.slice(0, 3).map((project, index) => (
+            {residential.map((project, index) => (
               <PropertyCard
                 key={project.id}
                 property={project}

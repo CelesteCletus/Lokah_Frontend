@@ -14,7 +14,7 @@ interface FeaturedPropertiesProps {
 export default function FeaturedProperties({ properties = staticProperties, onPropertyClick, onViewAll }: FeaturedPropertiesProps) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
-  const featured = properties.filter((p) => p.featured).slice(0, 4);
+  const featured = properties.filter((p) => p.featured).length > 0 ? properties.filter((p) => p.featured) : properties;
 
   return (
     <section id="properties" ref={ref} className="relative py-24 md:py-32 overflow-hidden">

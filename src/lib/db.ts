@@ -538,6 +538,7 @@ export const saveProperty = async (
       if (key === 'floorPlan' && files.floorPlan) return;
       if (key === 'brochure' && files.brochure) return;
       if (key === 'brochurePdf' && files.brochure) return;
+      if (key === 'gallery' && files.gallery && files.gallery.length > 0) return;
 
       if (typeof backendData[key] === 'object' && backendData[key] !== null) {
         formData.append(key, JSON.stringify(backendData[key]));

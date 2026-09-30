@@ -1833,7 +1833,7 @@ export default function AdminDashboard() {
                         name="name"
                         required
                         defaultValue={selectedProperty?.name || ''}
-                        placeholder="e.g. Infinity Sky Residences"
+                        placeholder="e.g. Royal Crest Villa"
                         className="input-luxury py-2.5 px-4 block w-full"
                       />
                     </div>

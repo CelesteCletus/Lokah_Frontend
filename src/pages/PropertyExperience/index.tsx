@@ -122,6 +122,8 @@ export default function PropertyExperience() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    setGalleryIndex(0);
+    setFloorPlanFailed(false);
   }, [slug]);
 
   useEffect(() => {
@@ -199,20 +201,15 @@ export default function PropertyExperience() {
     );
   };
 
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
-
   // If real user/admin photos exist, exclude sample placeholder assets
   const rawList = (property.images && property.images.length > 0 ? property.images : [property.image]).filter(Boolean);
   const userList = rawList.filter(img => !isPlaceholderImage(img));
   const candidateImages = userList.length > 0 ? userList : rawList;
-  const images = candidateImages.filter(img => !failedImages.has(img));
-  const displayImages = images.length > 0 
-    ? images 
-    : (property.image && !failedImages.has(property.image) ? [property.image] : ['/images/hero/projects-hero.jpg']);
+  const displayImages = candidateImages.length > 0 ? candidateImages : ['/images/hero/projects-hero.jpg'];
 
-  const safeGalleryIndex = Math.min(galleryIndex, Math.max(0, displayImages.length - 1));
-  const nextGalleryImage = () => setGalleryIndex((i) => (i + 1) % displayImages.length);
-  const prevGalleryImage = () => setGalleryIndex((i) => (i - 1 + displayImages.length) % displayImages.length);
+  const safeGalleryIndex = displayImages.length > 0 ? Math.min(galleryIndex, displayImages.length - 1) : 0;
+  const nextGalleryImage = () => setGalleryIndex((i) => (displayImages.length > 0 ? (i + 1) % displayImages.length : 0));
+  const prevGalleryImage = () => setGalleryIndex((i) => (displayImages.length > 0 ? (i - 1 + displayImages.length) % displayImages.length : 0));
 
   const tagline = getTagline(property);
   const storyOpening = getStoryOpening(property);
@@ -437,18 +434,17 @@ export default function PropertyExperience() {
           <div className="relative aspect-[16/9] rounded-3xl overflow-hidden border border-gold-500/15 shadow-elegant">
             <AnimatePresence mode="wait">
               <motion.img
-                key={safeGalleryIndex}
+                key={displayImages[safeGalleryIndex]}
                 initial={{ opacity: 0, scale: 1.06 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.8, ease: LUXE_EASE }}
                 src={displayImages[safeGalleryIndex]}
                 alt={`${property.name} — Gallery Image ${safeGalleryIndex + 1}`}
-                onError={() => {
-                  const currentSrc = displayImages[safeGalleryIndex];
-                  if (currentSrc && !failedImages.has(currentSrc)) {
-                    setFailedImages(prev => new Set(prev).add(currentSrc));
-                    setGalleryIndex(prev => Math.max(0, Math.min(prev, displayImages.length - 2)));
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.src.includes('/images/hero/projects-hero.jpg')) {
+                    target.src = '/images/hero/projects-hero.jpg';
                   }
                 }}
                 className="w-full h-full object-cover"

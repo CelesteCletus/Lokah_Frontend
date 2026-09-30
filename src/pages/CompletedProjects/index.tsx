@@ -13,17 +13,30 @@ export default function CompletedProjects() {
   const { onOpenBooking, properties } = useOutletContext<LayoutContextType>();
   const navigate = useNavigate();
   const goToProperty = (name: string) => navigate(`/properties/${slugify(name)}`);
-  type FilterTab = 'Villa' | 'Apartment' | 'Land to Landmark';
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('Villa');
+  type FilterTab = 'All' | 'Villa' | 'Apartment' | 'Land to Landmark';
+  const [activeFilter, setActiveFilter] = useState<FilterTab>('All');
 
   const tabs: { key: FilterTab; label: string }[] = [
+    { key: 'All', label: 'All Completed' },
     { key: 'Villa', label: 'Villas' },
     { key: 'Apartment', label: 'Apartments' },
     { key: 'Land to Landmark', label: 'Land to Landmark' },
   ];
 
   const filteredProjects = properties.filter((project) => {
-    return project.status === 'Completed' && project.type === activeFilter;
+    if (project.status !== 'Completed') return false;
+
+    if (activeFilter === 'All') return true;
+    if (activeFilter === 'Villa') {
+      return project.type === 'Villa' || (project.name && project.name.toLowerCase().includes('villa'));
+    }
+    if (activeFilter === 'Apartment') {
+      return project.type === 'Apartment' || (project.name && project.name.toLowerCase().includes('apartment'));
+    }
+    if (activeFilter === 'Land to Landmark') {
+      return project.type === 'Land to Landmark';
+    }
+    return project.type === activeFilter;
   });
 
   const highlights = [
