@@ -522,8 +522,21 @@ export default function AdminDashboard() {
       const numericalPrice = Number(formData.get('price'));
       const isFeatured = formData.get('featured') === 'true';
 
-      // Use the existing preview URL (remote URL) for the hero image if no new file was uploaded.
-      const heroImageUrl = propBannerPreview || '/images/projects/completed-1.jpg';
+      // Preserve existing canonical image; never default to placeholder
+      const isPlaceholder = (url: string | null | undefined): boolean => {
+        if (!url) return false;
+        return (
+          url.includes('/images/hero/projects-hero.jpg') ||
+          url.includes('/images/hero/home-hero.jpg') ||
+          url.includes('/images/hero/about-hero.jpg') ||
+          url.includes('/images/hero/services-hero.jpg') ||
+          url.includes('/images/projects/completed-')
+        );
+      };
+
+      const heroImageUrl = (propBannerPreview && !isPlaceholder(propBannerPreview))
+        ? propBannerPreview
+        : (selectedProperty?.image && !isPlaceholder(selectedProperty.image) ? selectedProperty.image : (propBannerPreview || ''));
 
       // For gallery: keep existing remote URLs as-is (excluding hero); new local files go into filesPayload.
       const normHeroTarget = normalizeStorageUrl(heroImageUrl);

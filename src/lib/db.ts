@@ -487,11 +487,25 @@ export const saveProperty = async (
 ): Promise<Property> => {
   const isUpdate = property.id && property.id > 0;
   
-  // Normalize existing URLs to relative paths (or keep Cloudinary) to avoid hardcoded domain pollution
-  const normalizedHero = normalizeStorageUrl(property.image);
+  const isPlaceholderUrl = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    return (
+      url.includes('/images/hero/projects-hero.jpg') ||
+      url.includes('/images/hero/home-hero.jpg') ||
+      url.includes('/images/hero/about-hero.jpg') ||
+      url.includes('/images/hero/services-hero.jpg') ||
+      url.includes('/images/projects/completed-')
+    );
+  };
+
+  // Normalize existing URLs to relative paths (or keep Cloudinary) to avoid hardcoded domain pollution.
+  // Never treat fallback placeholder assets as the property's persistent heroImage.
+  const normalizedHero = property.image && !isPlaceholderUrl(property.image)
+    ? normalizeStorageUrl(property.image)
+    : '';
   const normalizedGallery = (property.images || [])
     .map(img => normalizeStorageUrl(img))
-    .filter(img => img && img !== normalizedHero);
+    .filter(img => img && img !== normalizedHero && !isPlaceholderUrl(img));
 
   const hasUploadedGallery = Boolean(files?.gallery && files.gallery.length > 0);
   const backendData: any = {
@@ -533,8 +547,8 @@ export const saveProperty = async (
   if (files && (files.heroImage || files.gallery || files.brochure || files.floorPlan)) {
     const formData = new FormData();
     Object.keys(backendData).forEach(key => {
-      // Avoid key collision between string value and file value
-      if (key === 'heroImage' && files.heroImage) return;
+      // Avoid key collision between string value and file value, and omit empty heroImage to protect DB
+      if (key === 'heroImage' && (files.heroImage || !backendData.heroImage)) return;
       if (key === 'floorPlan' && files.floorPlan) return;
       if (key === 'brochure' && files.brochure) return;
       if (key === 'brochurePdf' && files.brochure) return;

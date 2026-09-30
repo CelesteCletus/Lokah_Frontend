@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { Property } from '../data/sampleData';
 import { formatPropertyDisplayLocation } from '../lib/propertyContent';
+import { normalizeStorageUrl } from '../lib/db';
 
 interface PropertyDetailsModalProps {
   property: Property | null;
@@ -32,7 +33,11 @@ export default function PropertyDetailsModal({ property, onClose, onBookVisit }:
 
   if (!property) return null;
 
-  const images = property.images && property.images.length > 0 ? property.images : [property.image];
+  const normHero = property.image ? normalizeStorageUrl(property.image) : '';
+  const galleryPhotos = (property.images || []).filter(img => img && normalizeStorageUrl(img) !== normHero);
+  const images = property.image 
+    ? [property.image, ...galleryPhotos] 
+    : (galleryPhotos.length > 0 ? galleryPhotos : ['/images/hero/projects-hero.jpg']);
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -87,7 +92,7 @@ export default function PropertyDetailsModal({ property, onClose, onBookVisit }:
             <motion.div layoutId={`property-image-${property.id}`} className="absolute inset-0">
               <AnimatePresence mode="wait">
                 <motion.img
-                  key={currentImageIndex}
+                  key={images[currentImageIndex]}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
