@@ -22,7 +22,7 @@ const footerLinks = {
 
 const socialLinks = [
   { icon: Facebook, href: 'https://www.facebook.com/lokahbuilders?rdid=xQSUB0bEHlZWhG3f&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1F94GS8q7g%2F#', label: 'Facebook' },
-  { icon: Instagram, href: 'https://www.instagram.com/lokah.builders.developers?stkn=NGt0YTc1dThjMXc%3D', label: 'Instagram' },
+  { icon: Instagram, href: 'https://www.instagram.com/lokahbuilders.developers/', label: 'Instagram' },
   { icon: Youtube, href: 'https://www.youtube.com/@lokahbuilders', label: 'YouTube' },
 ];
 

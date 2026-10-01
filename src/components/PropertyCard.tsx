@@ -66,6 +66,8 @@ export default function PropertyCard({ property, index, onClick }: PropertyCardP
           <img
             src={property.image}
             alt={property.name}
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               const target = e.currentTarget;
               if (!target.src.includes('/images/hero/projects-hero.jpg')) {

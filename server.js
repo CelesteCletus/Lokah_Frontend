@@ -1,6 +1,7 @@
-﻿import http from 'http';
+import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
@@ -106,7 +107,8 @@ const server = http.createServer((req, res) => {
   };
 
   // Caching strategy: immutable long cache for hashed assets, revalidate index.html
-  if (!isSpaFallback && targetFile.includes(path.join('dist', 'assets'))) {
+  const normalizedTarget = path.normalize(targetFile);
+  if (!isSpaFallback && normalizedTarget.includes(path.join('dist', 'assets'))) {
     headers['Cache-Control'] = 'public, max-age=31536000, immutable';
   } else if (ext === '.html' || isSpaFallback) {
     headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
@@ -114,7 +116,17 @@ const server = http.createServer((req, res) => {
 
   try {
     const stat = fs.statSync(targetFile);
-    headers['Content-Length'] = stat.size;
+    const isCompressible = /text|javascript|json|xml|svg/i.test(contentType);
+    const acceptEncoding = (req.headers['accept-encoding'] || '').toLowerCase();
+    const canGzip = isCompressible && acceptEncoding.includes('gzip');
+
+    if (canGzip) {
+      headers['Content-Encoding'] = 'gzip';
+      headers['Vary'] = 'Accept-Encoding';
+    } else {
+      headers['Content-Length'] = stat.size;
+    }
+
     res.writeHead(200, headers);
 
     if (req.method === 'HEAD') {
@@ -123,7 +135,11 @@ const server = http.createServer((req, res) => {
     }
 
     const stream = fs.createReadStream(targetFile);
-    stream.pipe(res);
+    if (canGzip) {
+      stream.pipe(zlib.createGzip({ level: 6 })).pipe(res);
+    } else {
+      stream.pipe(res);
+    }
   } catch (err) {
     res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Internal Server Error');

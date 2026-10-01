@@ -172,7 +172,7 @@ export default function Contact() {
                 <span>Facebook</span>
               </a>
               <a
-                href="https://www.instagram.com/lokah.builders.developers?stkn=NGt0YTc1dThjMXc%3D"
+                href="https://www.instagram.com/lokahbuilders.developers/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-charcoal-800/80 border border-ivory-400/10 rounded-lg text-ivory-300 hover:text-champagne-300 hover:border-champagne-400/30 transition-all text-xs font-body"
