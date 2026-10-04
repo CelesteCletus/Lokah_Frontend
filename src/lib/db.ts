@@ -74,11 +74,14 @@ export interface Job {
 export interface JobApplication {
   id: number;
   jobId?: number;
+  job_id?: number;
   jobTitle?: string;
+  job_title?: string;
   name: string;
   email: string;
   phone: string;
-  resumePath: string;
+  resumePath?: string;
+  resume_path?: string;
   position: string;
   created_at?: string;
 }

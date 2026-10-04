@@ -1622,7 +1622,7 @@ export default function AdminDashboard() {
 
                                       {/* JOB POSTING TITLE */}
                                       <td className="py-3.5 px-4 align-middle text-ivory-300 font-light select-text cursor-text">
-                                        {app.jobTitle || 'General Application'}
+                                        {app.jobTitle || app.job_title || 'General Application'}
                                       </td>
 
                                       {/* SUBMIT DATE */}
@@ -1632,18 +1632,21 @@ export default function AdminDashboard() {
 
                                       {/* RESUME */}
                                       <td className="py-3.5 px-4 text-center align-middle" onClick={(e) => e.stopPropagation()}>
-                                        {app.resumePath ? (
-                                          <a
-                                            href={app.resumePath.startsWith('http') ? app.resumePath : `${API_URL.replace('/api', '')}${app.resumePath}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="inline-flex items-center gap-1.5 py-1.5 px-3 border border-gold-500/20 hover:border-gold-500 hover:text-gold-400 rounded-lg text-[10px] font-semibold tracking-wider uppercase transition-all"
-                                          >
-                                            <Download className="w-3 h-3" /> CV
-                                          </a>
-                                        ) : (
-                                          <span className="text-ivory-500 text-[10px]">No CV</span>
-                                        )}
+                                        {(() => {
+                                          const resume = app.resumePath || app.resume_path;
+                                          return resume ? (
+                                            <a
+                                              href={resume.startsWith('http') ? resume : `${API_URL.replace('/api', '')}${resume}`}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="inline-flex items-center gap-1.5 py-1.5 px-3 border border-gold-500/20 hover:border-gold-500 hover:text-gold-400 rounded-lg text-[10px] font-semibold tracking-wider uppercase transition-all"
+                                            >
+                                              <Download className="w-3 h-3" /> CV
+                                            </a>
+                                          ) : (
+                                            <span className="text-ivory-500 text-[10px]">No CV</span>
+                                          );
+                                        })()}
                                       </td>
 
                                       {/* ACTION */}
@@ -3474,7 +3477,7 @@ export default function AdminDashboard() {
                   <div>
                     <span className="text-ivory-400 text-xs block">Job Posting Title</span>
                     <p className="text-ivory-200 text-xs mt-0.5 font-light select-text cursor-text">
-                      {selectedApplication.jobTitle || 'General Application / Open Role'}
+                      {selectedApplication.jobTitle || selectedApplication.job_title || 'General Application / Open Role'}
                     </p>
                   </div>
                   <div>
@@ -3489,33 +3492,36 @@ export default function AdminDashboard() {
               {/* Resume / Document Section */}
               <div className="p-4 rounded-xl bg-matte-950 border border-white/5 space-y-2.5">
                 <span className="text-[10px] uppercase tracking-wider text-gold-450 font-semibold block">Curriculum Vitae (Resume)</span>
-                {selectedApplication.resumePath ? (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-charcoal-900/80 rounded-xl border border-gold-500/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400 shrink-0">
-                        <FileText className="w-5 h-5" />
+                {(() => {
+                  const resumeUrl = selectedApplication.resumePath || selectedApplication.resume_path;
+                  return resumeUrl ? (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-charcoal-900/80 rounded-xl border border-gold-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400 shrink-0">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-ivory-100">Applicant CV Document</p>
+                          <p className="text-[10px] text-ivory-400 truncate max-w-[260px] select-text cursor-text">{resumeUrl.split('/').pop()}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold text-ivory-100">Applicant CV Document</p>
-                        <p className="text-[10px] text-ivory-400 truncate max-w-[260px] select-text cursor-text">{selectedApplication.resumePath.split('/').pop()}</p>
-                      </div>
+                      <a
+                        href={resumeUrl.startsWith('http') ? resumeUrl : `${API_URL.replace('/api', '')}${resumeUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        download
+                        className="btn-primary py-2 px-4 text-xs font-semibold flex items-center gap-2 uppercase tracking-wider shrink-0 w-full sm:w-auto justify-center"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Resume</span>
+                      </a>
                     </div>
-                    <a
-                      href={selectedApplication.resumePath.startsWith('http') ? selectedApplication.resumePath : `${API_URL.replace('/api', '')}${selectedApplication.resumePath}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      download
-                      className="btn-primary py-2 px-4 text-xs font-semibold flex items-center gap-2 uppercase tracking-wider shrink-0 w-full sm:w-auto justify-center"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download Resume</span>
-                    </a>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-charcoal-900/40 border border-white/5 text-center text-ivory-400 text-xs">
-                    No resume document was uploaded with this application.
-                  </div>
-                )}
+                  ) : (
+                    <div className="p-4 rounded-xl bg-charcoal-900/40 border border-white/5 text-center text-ivory-400 text-xs">
+                      No resume document was uploaded with this application.
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Footer Actions */}
