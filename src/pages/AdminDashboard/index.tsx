@@ -108,6 +108,8 @@ export default function AdminDashboard() {
   const [unifiedEnquiries, setUnifiedEnquiries] = useState<UnifiedEnquiry[]>([]);
   const [enquiryFilter, setEnquiryFilter] = useState<'all' | 'pending' | 'contacted' | 'resolved'>('all');
   const [selectedEnquiry, setSelectedEnquiry] = useState<UnifiedEnquiry | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
   const [notificationToast, setNotificationToast] = useState<{ message: string; type?: 'enquiry' | 'support' } | null>(null);
   const prevEnquiryCountRef = useRef<number | null>(null);
   const prevSupportUnreadRef = useRef<number | null>(null);
@@ -116,14 +118,6 @@ export default function AdminDashboard() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<JobApplication[]>([]);
-  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
-  const [copiedAppText, setCopiedAppText] = useState<string | null>(null);
-  const handleCopyAppText = (text: string, type: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedAppText(type);
-    setTimeout(() => setCopiedAppText(null), 2000);
-  };
   const [stats, setStats] = useState<DashboardStats | null>(null);
   
   const [loading, setLoading] = useState(true);
@@ -1559,94 +1553,115 @@ export default function AdminDashboard() {
 
                       {/* SUBTAB: APPLICATIONS */}
                       {careersSubTab === 'applications' && (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse text-xs font-body">
-                            <thead>
-                              <tr className="border-b border-ivory-400/15 text-gold-450 uppercase text-[10px] font-semibold">
-                                <th className="py-4 pr-4">Applicant</th>
-                                <th className="py-4 px-4">Position Applied</th>
-                                <th className="py-4 px-4">Job Posting Title</th>
-                                <th className="py-4 px-4">Submit Date</th>
-                                <th className="py-4 px-4">Resume</th>
-                                <th className="py-4 pl-4 text-right">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {applications.length === 0 ? (
-                                <tr>
-                                  <td colSpan={6} className="py-8 text-center text-ivory-400 font-light">
-                                    No job applications submitted yet.
-                                  </td>
-                                </tr>
-                              ) : (
-                                applications.map(app => (
-                                  <tr
-                                    key={app.id}
-                                    onClick={() => setSelectedApplication(app)}
-                                    className="border-b border-ivory-400/5 hover:bg-gold-500/5 transition-all cursor-pointer group"
-                                  >
-                                    <td className="py-3.5 pr-4 align-middle">
-                                      <p className="font-semibold text-ivory-100 text-sm group-hover:text-gold-400 transition-colors select-text">
-                                        {app.name}
-                                      </p>
-                                      <a
-                                        href={`tel:${app.phone}`}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="text-xs text-ivory-300 hover:text-gold-400 flex items-center gap-1.5 mt-1 transition-colors select-text"
-                                        title="Click to call or select phone number"
-                                      >
-                                        <Phone className="w-3 h-3 text-gold-500 shrink-0" />
-                                        <span className="select-text font-mono text-[11px]">{app.phone}</span>
-                                      </a>
-                                      <a
-                                        href={`mailto:${app.email}`}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="text-xs text-ivory-300 hover:text-gold-400 flex items-center gap-1.5 mt-0.5 transition-colors select-text"
-                                        title="Click to email or select address"
-                                      >
-                                        <Mail className="w-3 h-3 text-gold-500 shrink-0" />
-                                        <span className="select-text font-mono text-[11px] truncate max-w-[200px]">{app.email}</span>
-                                      </a>
-                                    </td>
-                                    <td className="py-3.5 px-4 align-middle">
-                                      <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] uppercase font-semibold tracking-wider bg-gold-500/15 text-gold-400 border border-gold-500/30">
-                                        {app.position}
-                                      </span>
-                                    </td>
-                                    <td className="py-3.5 px-4 text-ivory-300 font-light align-middle">
-                                      {app.jobTitle || 'General Application'}
-                                    </td>
-                                    <td className="py-3.5 px-4 text-ivory-400 font-light text-[11px] align-middle whitespace-nowrap">
-                                      {new Date(app.created_at || '').toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}
-                                    </td>
-                                    <td className="py-3.5 px-4 align-middle" onClick={(e) => e.stopPropagation()}>
-                                      {app.resumePath ? (
-                                        <a
-                                          href={`${API_URL.replace('/api', '')}${app.resumePath}`}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="inline-flex items-center gap-1.5 py-1.5 px-3 border border-gold-500/20 hover:border-gold-500 hover:text-gold-400 rounded-lg text-[10px] font-semibold tracking-wider uppercase transition-all"
-                                        >
-                                          <Download className="w-3 h-3" /> CV
-                                        </a>
-                                      ) : (
-                                        <span className="text-ivory-500 text-[11px] italic">No Resume</span>
-                                      )}
-                                    </td>
-                                    <td className="py-3.5 pl-4 text-right align-middle" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        onClick={() => setSelectedApplication(app)}
-                                        className="px-3 py-1.5 rounded-lg border border-gold-500/20 hover:border-gold-500/50 bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 text-xs font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer"
-                                      >
-                                        <Eye className="w-3.5 h-3.5" />
-                                        <span>View</span>
-                                      </button>
-                                    </td>
+                        <div>
+                          {applications.length === 0 ? (
+                            <div className="text-center py-16 border border-dashed border-ivory-400/10 rounded-2xl">
+                              <Briefcase className="w-10 h-10 text-ivory-500/40 mx-auto mb-3" />
+                              <p className="font-body text-xs text-ivory-400">No career applications received yet.</p>
+                            </div>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse text-xs font-body">
+                                <thead>
+                                  <tr className="border-b border-ivory-400/15 text-gold-450 uppercase text-[10px] font-semibold">
+                                    <th className="py-4 pr-4">Applicant</th>
+                                    <th className="py-4 px-4">Position Applied</th>
+                                    <th className="py-4 px-4">Job Posting Title</th>
+                                    <th className="py-4 px-4">Submit Date</th>
+                                    <th className="py-4 px-4 text-center">Resume</th>
+                                    <th className="py-4 pl-4 text-right">Action</th>
                                   </tr>
-                                ))
-                              )}
-                            </tbody>
-                          </table>
+                                </thead>
+                                <tbody>
+                                  {applications.map(app => (
+                                    <tr
+                                      key={app.id}
+                                      onClick={() => setSelectedApplication(app)}
+                                      className="border-b border-ivory-400/5 hover:bg-gold-500/5 transition-all cursor-pointer group"
+                                    >
+                                      {/* APPLICANT */}
+                                      <td className="py-3.5 pr-4 align-middle">
+                                        <p className="font-semibold text-ivory-100 text-sm group-hover:text-gold-400 transition-colors select-text">
+                                          {app.name}
+                                        </p>
+                                        <div
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="select-text cursor-text space-y-1 mt-1"
+                                        >
+                                          {app.phone && (
+                                            <div className="flex items-center gap-1.5 text-[11px] text-ivory-300">
+                                              <Phone className="w-3 h-3 text-gold-500 shrink-0" />
+                                              <a
+                                                href={`tel:${app.phone}`}
+                                                className="hover:text-gold-400 transition-colors select-text cursor-text"
+                                              >
+                                                {app.phone}
+                                              </a>
+                                            </div>
+                                          )}
+                                          {app.email && (
+                                            <div className="flex items-center gap-1.5 text-[11px] text-ivory-300">
+                                              <Mail className="w-3 h-3 text-gold-500 shrink-0" />
+                                              <a
+                                                href={`mailto:${app.email}`}
+                                                className="hover:text-gold-400 transition-colors select-text cursor-text"
+                                              >
+                                                {app.email}
+                                              </a>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </td>
+
+                                      {/* POSITION APPLIED */}
+                                      <td className="py-3.5 px-4 align-middle select-text cursor-text">
+                                        <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] uppercase font-semibold tracking-wider bg-gold-500/15 text-gold-400 border border-gold-500/30">
+                                          {app.position}
+                                        </span>
+                                      </td>
+
+                                      {/* JOB POSTING TITLE */}
+                                      <td className="py-3.5 px-4 align-middle text-ivory-300 font-light select-text cursor-text">
+                                        {app.jobTitle || 'General Application'}
+                                      </td>
+
+                                      {/* SUBMIT DATE */}
+                                      <td className="py-3.5 px-4 align-middle text-ivory-400 font-light text-[11px] whitespace-nowrap">
+                                        {new Date(app.created_at || '').toLocaleDateString([], { dateStyle: 'short' })}
+                                      </td>
+
+                                      {/* RESUME */}
+                                      <td className="py-3.5 px-4 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                                        {app.resumePath ? (
+                                          <a
+                                            href={app.resumePath.startsWith('http') ? app.resumePath : `${API_URL.replace('/api', '')}${app.resumePath}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex items-center gap-1.5 py-1.5 px-3 border border-gold-500/20 hover:border-gold-500 hover:text-gold-400 rounded-lg text-[10px] font-semibold tracking-wider uppercase transition-all"
+                                          >
+                                            <Download className="w-3 h-3" /> CV
+                                          </a>
+                                        ) : (
+                                          <span className="text-ivory-500 text-[10px]">No CV</span>
+                                        )}
+                                      </td>
+
+                                      {/* ACTION */}
+                                      <td className="py-3.5 pl-4 align-middle text-right" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                          onClick={() => setSelectedApplication(app)}
+                                          className="px-3 py-1.5 rounded-lg border border-gold-500/20 hover:border-gold-500/50 bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 text-xs font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                          <span>View</span>
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -3219,24 +3234,60 @@ export default function AdminDashboard() {
                 {/* Applicant Contact */}
                 <div className="p-4 rounded-xl bg-matte-950 border border-white/5 space-y-2.5">
                   <span className="text-[10px] uppercase tracking-wider text-gold-450 font-semibold block">Applicant Contact</span>
-                  <p className="text-ivory-100 font-medium text-sm">{selectedEnquiry.name}</p>
+                  <p className="text-ivory-100 font-medium text-sm select-text cursor-text">{selectedEnquiry.name}</p>
                   {selectedEnquiry.phone && selectedEnquiry.phone !== '-' && (
-                    <a
-                      href={`tel:${selectedEnquiry.phone}`}
-                      className="flex items-center gap-2 text-xs text-ivory-300 hover:text-gold-400 transition-colors"
-                    >
-                      <Phone className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                      <span>{selectedEnquiry.phone}</span>
-                    </a>
+                    <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-charcoal-900/60 border border-white/5">
+                      <a
+                        href={`tel:${selectedEnquiry.phone}`}
+                        className="flex items-center gap-2 text-xs text-ivory-300 hover:text-gold-400 transition-colors select-text cursor-text truncate"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-gold-500 shrink-0" />
+                        <span className="select-text cursor-text truncate">{selectedEnquiry.phone}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(selectedEnquiry.phone);
+                          setCopiedText('enq-phone');
+                          setTimeout(() => setCopiedText(null), 2000);
+                        }}
+                        className="p-1 hover:bg-gold-500/10 text-ivory-400 hover:text-gold-400 rounded transition-all shrink-0 cursor-pointer"
+                        title="Copy Phone Number"
+                      >
+                        {copiedText === 'enq-phone' ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                   )}
                   {selectedEnquiry.email && selectedEnquiry.email !== '-' && (
-                    <a
-                      href={`mailto:${selectedEnquiry.email}`}
-                      className="flex items-center gap-2 text-xs text-ivory-300 hover:text-gold-400 transition-colors"
-                    >
-                      <Mail className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                      <span>{selectedEnquiry.email}</span>
-                    </a>
+                    <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-charcoal-900/60 border border-white/5">
+                      <a
+                        href={`mailto:${selectedEnquiry.email}`}
+                        className="flex items-center gap-2 text-xs text-ivory-300 hover:text-gold-400 transition-colors select-text cursor-text truncate"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-gold-500 shrink-0" />
+                        <span className="select-text cursor-text truncate">{selectedEnquiry.email}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(selectedEnquiry.email);
+                          setCopiedText('enq-email');
+                          setTimeout(() => setCopiedText(null), 2000);
+                        }}
+                        className="p-1 hover:bg-gold-500/10 text-ivory-400 hover:text-gold-400 rounded transition-all shrink-0 cursor-pointer"
+                        title="Copy Email Address"
+                      >
+                        {copiedText === 'enq-email' ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -3305,10 +3356,10 @@ export default function AdminDashboard() {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* CAREER APPLICATION DETAIL POPUP MODAL */}
-      <AnimatePresence>
+        {/* ============================================================================
+           CAREER APPLICATION DETAIL MODAL (Matching Customer Enquiries View)
+           ============================================================================ */}
         {selectedApplication && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -3329,13 +3380,15 @@ export default function AdminDashboard() {
                 <div>
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                     <span className="px-2.5 py-0.5 rounded-md text-[10px] uppercase font-semibold tracking-wider border bg-gold-500/15 text-gold-400 border-gold-500/30">
-                      CAREER APPLICATION
+                      {selectedApplication.position}
                     </span>
-                    <span className="text-ivory-400 text-xs font-light">
-                      Submitted: {new Date(selectedApplication.created_at || '').toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-                    </span>
+                    {selectedApplication.created_at && (
+                      <span className="text-ivory-400 text-xs font-light">
+                        Received: {new Date(selectedApplication.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                      </span>
+                    )}
                   </div>
-                  <h3 className="font-display text-2xl font-light text-ivory-50 select-text">
+                  <h3 className="font-display text-2xl font-light text-ivory-50 select-text cursor-text">
                     {selectedApplication.name}
                   </h3>
                 </div>
@@ -3350,108 +3403,126 @@ export default function AdminDashboard() {
               {/* Applicant & Position Info Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Applicant Contact */}
-                <div className="p-4 rounded-xl bg-matte-950 border border-white/5 space-y-3">
+                <div className="p-4 rounded-xl bg-matte-950 border border-white/5 space-y-2.5">
                   <span className="text-[10px] uppercase tracking-wider text-gold-450 font-semibold block">Applicant Contact</span>
-                  <p className="text-ivory-100 font-medium text-sm select-text">{selectedApplication.name}</p>
+                  <p className="text-ivory-100 font-medium text-sm select-text cursor-text">{selectedApplication.name}</p>
+                  
+                  {selectedApplication.phone && (
+                    <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-charcoal-900/60 border border-white/5">
+                      <a
+                        href={`tel:${selectedApplication.phone}`}
+                        className="flex items-center gap-2 text-xs text-ivory-300 hover:text-gold-400 transition-colors select-text cursor-text truncate"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-gold-500 shrink-0" />
+                        <span className="select-text cursor-text truncate">{selectedApplication.phone}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(selectedApplication.phone);
+                          setCopiedText('app-phone');
+                          setTimeout(() => setCopiedText(null), 2000);
+                        }}
+                        className="p-1 hover:bg-gold-500/10 text-ivory-400 hover:text-gold-400 rounded transition-all shrink-0 cursor-pointer"
+                        title="Copy Phone Number"
+                      >
+                        {copiedText === 'app-phone' ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  )}
 
-                  {/* Phone with copy & click */}
-                  <div className="flex items-center justify-between gap-2 bg-charcoal-900/60 p-2.5 rounded-lg border border-ivory-400/10">
-                    <a
-                      href={`tel:${selectedApplication.phone}`}
-                      className="flex items-center gap-2 text-xs text-ivory-200 hover:text-gold-400 transition-colors select-text font-mono"
-                      title="Click to call"
-                    >
-                      <Phone className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                      <span className="select-text">{selectedApplication.phone}</span>
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyAppText(selectedApplication.phone, 'phone')}
-                      className="text-ivory-400 hover:text-gold-400 p-1 rounded transition-colors text-[11px] flex items-center gap-1 cursor-pointer shrink-0"
-                      title="Copy Phone Number"
-                    >
-                      {copiedAppText === 'phone' ? (
-                        <span className="text-emerald-400 flex items-center gap-1 text-[10px]"><Check className="w-3 h-3" /> Copied</span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-[10px]"><Copy className="w-3 h-3" /> Copy</span>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Email with copy & click */}
-                  <div className="flex items-center justify-between gap-2 bg-charcoal-900/60 p-2.5 rounded-lg border border-ivory-400/10">
-                    <a
-                      href={`mailto:${selectedApplication.email}`}
-                      className="flex items-center gap-2 text-xs text-ivory-200 hover:text-gold-400 transition-colors select-text font-mono truncate"
-                      title="Click to send email"
-                    >
-                      <Mail className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                      <span className="select-text truncate max-w-[150px]">{selectedApplication.email}</span>
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyAppText(selectedApplication.email, 'email')}
-                      className="text-ivory-400 hover:text-gold-400 p-1 rounded transition-colors text-[11px] flex items-center gap-1 cursor-pointer shrink-0"
-                      title="Copy Email Address"
-                    >
-                      {copiedAppText === 'email' ? (
-                        <span className="text-emerald-400 flex items-center gap-1 text-[10px]"><Check className="w-3 h-3" /> Copied</span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-[10px]"><Copy className="w-3 h-3" /> Copy</span>
-                      )}
-                    </button>
-                  </div>
+                  {selectedApplication.email && (
+                    <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-charcoal-900/60 border border-white/5">
+                      <a
+                        href={`mailto:${selectedApplication.email}`}
+                        className="flex items-center gap-2 text-xs text-ivory-300 hover:text-gold-400 transition-colors select-text cursor-text truncate"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-gold-500 shrink-0" />
+                        <span className="select-text cursor-text truncate">{selectedApplication.email}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(selectedApplication.email);
+                          setCopiedText('app-email');
+                          setTimeout(() => setCopiedText(null), 2000);
+                        }}
+                        className="p-1 hover:bg-gold-500/10 text-ivory-400 hover:text-gold-400 rounded transition-all shrink-0 cursor-pointer"
+                        title="Copy Email Address"
+                      >
+                        {copiedText === 'app-email' ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                {/* Position Details */}
-                <div className="p-4 rounded-xl bg-matte-950 border border-white/5 space-y-3">
-                  <span className="text-[10px] uppercase tracking-wider text-gold-450 font-semibold block">Position Details</span>
+                {/* Job Posting & Position Summary */}
+                <div className="p-4 rounded-xl bg-matte-950 border border-white/5 space-y-2.5">
+                  <span className="text-[10px] uppercase tracking-wider text-gold-450 font-semibold block">Application Summary</span>
                   <div>
-                    <span className="text-ivory-400 text-xs block">Position Applied For</span>
-                    <p className="text-ivory-100 font-medium text-sm mt-0.5 select-text">{selectedApplication.position}</p>
+                    <span className="text-ivory-400 text-xs block">Position Applied</span>
+                    <p className="text-ivory-100 font-medium text-xs mt-0.5 select-text cursor-text">{selectedApplication.position}</p>
                   </div>
                   <div>
-                    <span className="text-ivory-400 text-xs block">Job Posting Reference</span>
-                    <p className="text-ivory-200 text-xs mt-0.5 select-text font-light">{selectedApplication.jobTitle || 'General Application'}</p>
+                    <span className="text-ivory-400 text-xs block">Job Posting Title</span>
+                    <p className="text-ivory-200 text-xs mt-0.5 font-light select-text cursor-text">
+                      {selectedApplication.jobTitle || 'General Application / Open Role'}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-ivory-400 text-xs block">Application ID</span>
-                    <p className="text-ivory-400 text-xs font-mono mt-0.5">#{selectedApplication.id}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resume / Attachment Section */}
-              <div className="p-4 rounded-xl bg-charcoal-900/80 border border-gold-500/15 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-ivory-100 text-xs font-medium">Curriculum Vitae / Resume</p>
-                    <p className="text-ivory-400 text-[11px] font-light">
-                      {selectedApplication.resumePath ? 'PDF Document attached by candidate' : 'No document uploaded'}
+                    <span className="text-ivory-400 text-xs block">Application Reference ID</span>
+                    <p className="text-ivory-300 text-xs mt-0.5 font-mono select-text cursor-text">
+                      APP-#{selectedApplication.id}
                     </p>
                   </div>
                 </div>
-                {selectedApplication.resumePath && (
-                  <a
-                    href={`${API_URL.replace('/api', '')}${selectedApplication.resumePath}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-primary py-2 px-5 text-xs font-semibold uppercase tracking-wider inline-flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download CV</span>
-                  </a>
+              </div>
+
+              {/* Resume / Document Section */}
+              <div className="p-4 rounded-xl bg-matte-950 border border-white/5 space-y-2.5">
+                <span className="text-[10px] uppercase tracking-wider text-gold-450 font-semibold block">Curriculum Vitae (Resume)</span>
+                {selectedApplication.resumePath ? (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-charcoal-900/80 rounded-xl border border-gold-500/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400 shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-ivory-100">Applicant CV Document</p>
+                        <p className="text-[10px] text-ivory-400 truncate max-w-[260px] select-text cursor-text">{selectedApplication.resumePath.split('/').pop()}</p>
+                      </div>
+                    </div>
+                    <a
+                      href={selectedApplication.resumePath.startsWith('http') ? selectedApplication.resumePath : `${API_URL.replace('/api', '')}${selectedApplication.resumePath}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      download
+                      className="btn-primary py-2 px-4 text-xs font-semibold flex items-center gap-2 uppercase tracking-wider shrink-0 w-full sm:w-auto justify-center"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download Resume</span>
+                    </a>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-charcoal-900/40 border border-white/5 text-center text-ivory-400 text-xs">
+                    No resume document was uploaded with this application.
+                  </div>
                 )}
               </div>
 
-              {/* Footer */}
+              {/* Footer Actions */}
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-ivory-400/10">
                 <button
                   onClick={() => setSelectedApplication(null)}
-                  className="btn-secondary py-2 px-6 text-xs"
+                  className="btn-secondary py-2 px-5 text-xs w-full sm:w-auto"
                 >
                   Close
                 </button>
