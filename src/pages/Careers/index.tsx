@@ -29,7 +29,7 @@ function ApplyModal({ job, onClose }: { job: Job; onClose: () => void }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resume) {
-      setError('Please attach your resume (PDF or Word document).');
+      setError('Please attach your resume (PDF document).');
       return;
     }
     setLoading(true);
@@ -149,12 +149,12 @@ function ApplyModal({ job, onClose }: { job: Job; onClose: () => void }) {
               <label className="flex items-center gap-3 border border-dashed border-ivory-400/20 hover:border-gold-500/40 rounded-xl px-4 py-4 cursor-pointer transition-all">
                 <Upload className="w-4 h-4 text-gold-500 shrink-0" />
                 <span className="font-body text-ivory-400 text-sm truncate">
-                  {resume ? resume.name : 'Click to attach PDF or Word document'}
+                  {resume ? resume.name : 'Click to attach PDF document'}
                 </span>
                 <input
                   type="file"
                   required
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf"
                   className="hidden"
                   onChange={(e) => setResume(e.target.files?.[0] || null)}
                 />
