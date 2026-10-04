@@ -1,0 +1,27 @@
+# Node modules
+node_modules/
+server/node_modules/
+
+# Production build outputs
+dist/
+dist-ssr/
+
+# Environment variables & Secrets
+.env
+.env.*
+!.env.example
+
+# SSL & TLS Certificates / Keys
+*.pem
+*.key
+*.crt
+
+# Log files
+*.log
+logs/
+
+# Editor & OS system files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
